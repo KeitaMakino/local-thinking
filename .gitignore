@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code local settings (per-user)
+.claude/settings.local.json
+
+# Node (future)
+node_modules/
+
+# Netlify
+.netlify/

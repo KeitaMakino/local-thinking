@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#E4E0D8">
+<title>LOCAL THINKING — WEB BOOK プロトタイプ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFFFFF; --paper-edge:#E7E4DE; --ink:#2C2620; --ink-soft:#7C7367;
+    --accent:#C26B36; --accent-deep:#A9572A; --sea:#3F6B79; --sea-soft:#7BA0AB;
+    --hl1:rgba(199,159,84,.22); --hl2:rgba(206,150,66,.38); --hl3:rgba(210,128,52,.54);
+    --frame:#16130f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Jost","Zen Maru Gothic","Hiragino Sans",sans-serif;font-weight:400;
+    background:#E4E0D8;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:100%;color:var(--ink);overflow:hidden;
+  }
+  .mincho{font-family:"Jost","Zen Maru Gothic","Hiragino Sans",sans-serif;}
+
+  /* ===== reading column ===== */
+  .phone{
+    --h:min(100vh,940px);
+    width:calc(var(--h) * 393 / 852);height:var(--h);
+    background:var(--paper);
+    box-shadow:0 12px 50px -18px rgba(60,50,38,.30);
+    position:relative;flex:none;
+  }
+  .screen{
+    width:100%;height:100%;background:var(--paper);overflow:hidden;
+    position:relative;display:flex;flex-direction:column;
+  }
+
+  /* ===== app bar ===== */
+  .appbar{
+    height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;
+    padding:0 12px;border-bottom:1px solid var(--paper-edge);z-index:6;
+    transition:opacity .35s,transform .35s;
+  }
+  .tocbtn{
+    background:none;border:none;cursor:pointer;padding:9px 8px;
+    display:flex;flex-direction:column;gap:4px;
+  }
+  .tocbtn span{display:block;width:20px;height:2px;background:var(--ink);border-radius:2px;}
+  .tocbtn span:nth-child(2){width:14px;}
+  .appbar .title{font-size:14px;letter-spacing:.08em;color:var(--ink);text-align:center;flex:1;min-width:0;padding:0 6px;}
+  .appbar .title small{display:block;font-size:8.5px;font-weight:600;letter-spacing:.16em;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* read-mode toggle */
+  .modetog{display:flex;background:var(--paper-edge);border-radius:999px;padding:3px;}
+  .modetog button{
+    border:none;background:none;font-size:11px;padding:5px 9px;border-radius:999px;
+    color:var(--ink-soft);cursor:pointer;transition:.2s;white-space:nowrap;
+  }
+  .modetog button.active{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.16);}
+
+  /* ===== viewport / pages ===== */
+  .viewport{flex:1;position:relative;overflow:hidden;touch-action:pan-y;}
+  .strip{display:flex;height:100%;will-change:transform;}
+  .strip.anim{transition:transform .42s cubic-bezier(.32,.72,.26,1);}
+  .page{
+    width:100%;height:100%;flex:none;overflow-y:auto;overflow-x:hidden;
+    padding:34px 32px 30px;display:flex;flex-direction:column;justify-content:center;
+    background:var(--paper);
+  }
+  .page::-webkit-scrollbar{display:none;}
+  .page-vignette{position:relative;}
+
+  /* prose */
+  .kicker{font-size:10px;letter-spacing:.32em;color:var(--accent-deep);font-weight:700;
+    font-family:"Jost",sans-serif;margin-bottom:20px;}
+  .ptitle{font-size:25px;line-height:1.78;color:var(--ink);}
+  .prose{font-size:clamp(16px,4.4vw,18px);line-height:2.16;letter-spacing:.02em;color:var(--ink);}
+  .prose p+p{margin-top:1.05em;}
+  .prose .lead{margin-bottom:.2em;}
+
+  /* heatmap highlight */
+  .hl{border-radius:3px;padding:.06em .1em;cursor:pointer;transition:background-color .45s ease;background:var(--hl1);}
+  .hl.h2{background:var(--hl2);}
+  .hl.h3{background:var(--hl3);}
+  body.solo .hl{background:transparent !important;cursor:default;}
+
+  /* inline comment marker (fusen) */
+  .marker{
+    display:inline-flex;align-items:center;gap:4px;vertical-align:middle;margin-left:6px;
+    background:#fff;border:1px solid var(--paper-edge);border-radius:999px;padding:2px 8px 2px 6px;
+    font-size:10.5px;color:var(--ink-soft);cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,.1);transition:transform .15s;
+  }
+  .marker:active{transform:scale(.93);}
+  .marker .ic{width:14px;height:14px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:9px;}
+  body.solo .marker{display:none;}
+
+  /* inline author voice */
+  .authnote{
+    margin-top:18px;border-left:3px solid var(--sea);background:rgba(63,107,121,.07);
+    border-radius:0 10px 10px 0;padding:12px 14px;
+  }
+  .authnote .ah{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .authnote .av{width:22px;height:22px;border-radius:50%;background:var(--sea);color:#fff;display:grid;place-items:center;font-size:11px;}
+  .authnote .an{font-size:11px;color:var(--sea);}
+  .authnote .ab{font-size:8.5px;letter-spacing:.12em;background:var(--sea);color:#fff;padding:2px 6px;border-radius:4px;}
+  .authnote p{font-size:13px;line-height:1.85;color:#445;}
+  body.solo .authnote{display:none;}
+
+  /* O2O CTA */
+  .o2o{
+    margin-top:22px;background:#F6F0E5;
+    border:1px solid var(--paper-edge);border-radius:16px;padding:16px 16px 15px;
+    box-shadow:0 8px 22px -14px rgba(120,70,30,.45);
+  }
+  .o2o .tag{font-size:9.5px;letter-spacing:.14em;color:var(--accent-deep);display:flex;align-items:center;gap:5px;}
+  .o2o .ot{font-size:15px;line-height:1.6;margin:8px 0 4px;color:var(--ink);}
+  .o2o .od{font-size:11.5px;color:var(--ink-soft);line-height:1.7;margin-bottom:12px;}
+  .o2o button{
+    width:100%;border:none;background:var(--accent);color:#fff;font-size:13px;
+    padding:12px;border-radius:11px;cursor:pointer;transition:.15s;font-family:inherit;
+  }
+  .o2o button:active{transform:scale(.98);background:var(--accent-deep);}
+
+  /* grow / notify */
+  .grow{margin-top:20px;border:1px dashed var(--paper-edge);border-radius:14px;padding:16px;text-align:center;}
+  .grow .gt{font-size:12.5px;color:var(--ink);margin-bottom:3px;}
+  .grow .gd{font-size:11px;color:var(--ink-soft);line-height:1.7;margin-bottom:13px;}
+  .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:11.5px;color:var(--ink);}
+  .track{width:42px;height:24px;border-radius:999px;background:var(--paper-edge);position:relative;transition:.2s;flex:none;}
+  .track i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:.2s;}
+  .switch.on .track{background:var(--sea);}
+  .switch.on .track i{left:21px;}
+
+  /* swipe hint */
+  .swipehint{
+    position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:10.5px;
+    color:var(--ink-soft);letter-spacing:.08em;pointer-events:none;
+    animation:fade 3.4s ease-in-out 1.6s forwards;
+  }
+  @keyframes fade{to{opacity:0;}}
+  body.cover .swipehint{display:none;}
+
+  /* ===== bottom bar ===== */
+  .botbar{
+    height:54px;flex:none;border-top:1px solid var(--paper-edge);
+    display:flex;align-items:center;gap:10px;padding:0 16px;z-index:6;
+    transition:opacity .35s,transform .35s;
+  }
+  .nav{
+    width:34px;height:34px;border-radius:50%;border:1px solid var(--paper-edge);background:#fff;
+    display:grid;place-items:center;cursor:pointer;color:var(--ink);font-size:15px;flex:none;
+  }
+  .nav:disabled{opacity:.3;cursor:default;}
+  .progwrap{flex:1;}
+  .progline{height:3px;border-radius:3px;background:var(--paper-edge);overflow:hidden;}
+  .progline i{display:block;height:100%;background:var(--accent);width:0;transition:width .42s cubic-bezier(.32,.72,.26,1);}
+  .pgnum{font-size:10px;color:var(--ink-soft);text-align:center;margin-top:4px;letter-spacing:.06em;}
+
+  /* hide chrome under cover */
+  body.cover .appbar,body.cover .botbar{opacity:0;transform:translateY(6px);pointer-events:none;}
+
+  /* ===== cover (photo + layered logo + obi) ===== */
+  .cover{
+    position:absolute;inset:0;z-index:16;overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;scroll-behavior:smooth;
+    transition:opacity .55s ease,transform .55s ease;
+  }
+  .cover.dismissed{opacity:0;transform:scale(1.06);pointer-events:none;}
+  .cv-screen{position:relative;width:100%;height:100%;overflow:hidden;}
+  .cv-photo{
+    position:absolute;inset:0;z-index:1;background-color:#6c97b5;
+    background-image:url("images/cover_bg.webp"),
+      linear-gradient(177deg,#4FB4E6,#79C6DC 32%,#9FBE79 52%,#3E6B3A);
+    background-size:cover,cover;background-position:center;background-repeat:no-repeat;
+  }
+  .cv-logomain{
+    position:absolute;z-index:2;left:50%;top:21%;width:108%;
+    transform:translateX(-50%);
+    filter:drop-shadow(0 4px 20px rgba(0,0,0,.22));
+  }
+  .cv-fg{
+    position:absolute;inset:0;z-index:3;
+    background-image:url("images/cover_bg2.webp");
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+  }
+  .cv-botscrim{position:absolute;inset:0;z-index:4;pointer-events:none;
+    background:linear-gradient(180deg,transparent 48%,rgba(6,16,9,.46));}
+  .cv-frame{position:absolute;inset:14px;z-index:5;border:1.6px solid rgba(255,255,255,.92);
+    border-radius:15px;color:#fff;}
+  .cv-top{position:absolute;top:16px;left:18px;right:15px;display:flex;
+    align-items:center;justify-content:space-between;}
+  .cv-logoyoko{height:13px;width:auto;display:block;
+    filter:drop-shadow(0 1px 5px rgba(0,0,0,.4));}
+  .cv-menu{background:none;border:none;padding:5px 3px;cursor:pointer;
+    display:flex;flex-direction:column;gap:5px;}
+  .cv-menu span{display:block;width:27px;height:3px;background:#fff;border-radius:2px;
+    box-shadow:0 1px 3px rgba(0,0,0,.35);}
+  .cv-sub-v{position:absolute;right:7.5%;top:52%;display:flex;flex-direction:row-reverse;
+    align-items:flex-start;gap:10px;}
+  .cv-sub-v span{writing-mode:vertical-rl;
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-size:clamp(15px,4.3vw,17px);letter-spacing:.14em;line-height:1;
+    text-shadow:0 1px 14px rgba(0,0,0,.66);}
+  .cv-author{position:absolute;left:12%;bottom:16.5%;
+    font-family:"Jost",sans-serif;font-weight:400;
+    font-size:clamp(17px,5vw,20px);letter-spacing:.2em;text-shadow:0 1px 14px rgba(0,0,0,.65);}
+  .cv-enter{position:absolute;left:50%;bottom:4.6%;transform:translateX(-50%);
+    background:none;border:none;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 16px;}
+  .cv-enter .lbl{font-family:"Jost",sans-serif;font-size:9px;letter-spacing:.28em;
+    color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.6);}
+  .cv-enter .dn{display:block;width:9px;height:9px;border-right:1.8px solid #fff;
+    border-bottom:1.8px solid #fff;transform:rotate(45deg);
+    filter:drop-shadow(0 1px 4px rgba(0,0,0,.5));animation:nudge 1.9s ease-in-out infinite;}
+  @keyframes nudge{0%,100%{transform:rotate(45deg);}50%{transform:rotate(45deg) translate(2.4px,2.4px);}}
+  .cv-mark{position:absolute;left:12%;bottom:9%;display:none;align-items:center;gap:6px;
+    font-size:11px;color:#fff;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.55);
+    border-radius:999px;padding:5px 12px;cursor:pointer;}
+  .cv-mark b{font-weight:600;font-family:"Jost",sans-serif;}
+
+  /* ===== cover obi (recommendations) ===== */
+  .cv-obi{
+    background:#1c1916;color:#EDE7DA;
+    padding:42px 28px 38px;display:flex;flex-direction:column;
+  }
+  .obi-kicker{
+    font-family:"Jost",sans-serif;font-size:9.5px;letter-spacing:.34em;
+    color:var(--accent);text-align:center;margin-bottom:7px;
+  }
+  .obi-head{
+    font-family:"Zen Maru Gothic",sans-serif;font-size:15px;letter-spacing:.1em;
+    color:#F2ECDF;text-align:center;margin-bottom:8px;
+  }
+  .obi-q{margin:0;padding:21px 2px;border-top:1px solid rgba(255,255,255,.12);}
+  .obi-q:last-of-type{border-bottom:1px solid rgba(255,255,255,.12);}
+  .obi-q p{
+    font-family:"Zen Maru Gothic",sans-serif;font-size:13.5px;line-height:2;
+    letter-spacing:.02em;color:#F1EBDE;
+  }
+  .obi-q cite{
+    display:block;margin-top:12px;font-style:normal;font-size:10.5px;
+    letter-spacing:.06em;color:#A69C8A;
+  }
+  .obi-enter{
+    margin-top:30px;border:none;background:var(--accent);color:#fff;
+    font-family:inherit;font-size:14px;letter-spacing:.06em;
+    padding:16px;border-radius:12px;cursor:pointer;transition:.15s;
+  }
+  .obi-enter:active{transform:scale(.98);background:var(--accent-deep);}
+  .obi-note{
+    margin-top:14px;text-align:center;font-size:9.5px;
+    letter-spacing:.05em;color:#6f6557;
+  }
+
+  /* ===== table of contents ===== */
+  .toc{
+    position:absolute;inset:0;z-index:20;background:var(--paper);
+    display:flex;flex-direction:column;
+    transform:translateY(-101%);transition:transform .34s cubic-bezier(.32,.72,.26,1);
+  }
+  .toc.show{transform:translateY(0);}
+  .toc-head{
+    flex:none;height:58px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px 0 22px;border-bottom:1px solid var(--paper-edge);
+  }
+  .toc-ttl{font-size:15px;letter-spacing:.16em;color:var(--ink);}
+  .toc-x{background:none;border:none;font-size:26px;line-height:1;color:var(--ink-soft);
+    cursor:pointer;width:40px;height:40px;}
+  .toc-body{flex:1;overflow-y:auto;}
+  .toc-row{
+    width:100%;display:flex;align-items:center;gap:14px;padding:15px 22px;
+    background:none;border:none;border-bottom:1px solid var(--paper-edge);
+    cursor:pointer;text-align:left;font-family:inherit;
+  }
+  .toc-no{font-family:"Jost",sans-serif;font-size:13px;color:var(--ink-soft);
+    width:22px;flex:none;text-align:center;}
+  .toc-tx{flex:1;min-width:0;}
+  .toc-tx b{display:block;font-weight:400;font-size:13.5px;color:var(--ink);line-height:1.45;}
+  .toc-tx i{display:block;font-style:normal;font-size:10px;color:var(--ink-soft);
+    margin-top:3px;line-height:1.5;}
+  .toc-state{font-size:9.5px;letter-spacing:.06em;color:var(--ink-soft);flex:none;}
+  .toc-row.current{background:rgba(194,107,54,.08);}
+  .toc-row.current .toc-no,.toc-row.current .toc-state{color:var(--accent-deep);}
+  .toc-row.locked{opacity:.42;}
+  .toc-back{
+    flex:none;border:none;border-top:1px solid var(--paper-edge);background:none;
+    padding:16px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
+  }
+
+  /* ===== comment sheet ===== */
+  .scrim{position:absolute;inset:0;background:rgba(20,16,10,.42);opacity:0;pointer-events:none;transition:.25s;z-index:18;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:22px 22px 0 0;
+    transform:translateY(102%);transition:transform .32s cubic-bezier(.32,.72,.26,1);z-index:19;
+    max-height:78%;display:flex;flex-direction:column;box-shadow:0 -10px 40px -10px rgba(0,0,0,.4);
+  }
+  .sheet.show{transform:translateY(0);}
+  .sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--paper-edge);margin:9px auto 4px;}
+  .sheet .sh-head{padding:6px 20px 12px;border-bottom:1px solid var(--paper-edge);}
+  .sheet .sh-head h3{font-size:13px;font-weight:400;color:var(--ink);}
+  .sheet .sh-head p{font-size:10.5px;color:var(--ink-soft);margin-top:2px;}
+  .sheet .sh-body{overflow-y:auto;padding:14px 20px 6px;}
+  .cmt{display:flex;gap:10px;margin-bottom:16px;}
+  .cmt .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px;color:#fff;background:var(--ink-soft);}
+  .cmt.author .av{background:var(--sea);}
+  .cmt .bd{flex:1;}
+  .cmt .nm{font-size:11.5px;color:var(--ink);display:flex;align-items:center;gap:6px;}
+  .cmt.author .nm{color:var(--sea);}
+  .cmt .badge{font-size:8px;letter-spacing:.1em;background:var(--sea);color:#fff;padding:2px 6px;border-radius:4px;}
+  .cmt .tx{font-size:12.5px;line-height:1.8;color:#444;margin-top:4px;}
+  .cmt .meta{font-size:10px;color:var(--ink-soft);margin-top:5px;}
+  .composer{border-top:1px solid var(--paper-edge);padding:12px 16px;display:flex;gap:9px;align-items:center;flex:none;}
+  .composer .fake{flex:1;background:var(--paper-edge);border-radius:999px;padding:10px 14px;font-size:12px;color:var(--ink-soft);cursor:pointer;}
+  .composer .send{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:15px;cursor:pointer;flex:none;}
+
+  /* toast */
+  .toast{
+    position:absolute;left:50%;bottom:74px;transform:translate(-50%,16px);
+    background:var(--ink);color:#F4F1EA;font-size:11.5px;padding:10px 16px;
+    border-radius:999px;opacity:0;pointer-events:none;transition:.28s;z-index:25;max-width:84%;
+    text-align:center;line-height:1.5;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ===== chapter title page ===== */
+  .ch-cover{display:flex;flex-direction:column;justify-content:center;height:100%;}
+  .ch-no{font-family:"Jost",sans-serif;font-size:10.5px;letter-spacing:.34em;color:var(--accent-deep);font-weight:700;margin-bottom:22px;}
+  .ch-title{font-size:24px;line-height:1.7;color:var(--ink);margin-bottom:10px;letter-spacing:.04em;}
+  .ch-sub{font-size:13px;color:var(--ink-soft);margin-bottom:30px;letter-spacing:.06em;line-height:1.7;}
+  .ch-onlyhere{border-left:3px solid var(--sea);background:rgba(63,107,121,.07);padding:13px 15px 14px;border-radius:0 10px 10px 0;font-size:12.5px;line-height:1.95;color:#445;margin-bottom:22px;}
+  .ch-onlyhere .oh{font-family:"Jost",sans-serif;font-size:9.5px;letter-spacing:.28em;color:var(--sea);margin-bottom:6px;font-weight:600;}
+  .ch-meta{display:flex;gap:14px;font-size:10.5px;letter-spacing:.08em;color:var(--ink-soft);}
+  .ch-meta b{font-family:"Jost",sans-serif;color:var(--ink);font-weight:600;margin-right:3px;}
+
+  /* ===== section skeleton page ===== */
+  .sec-page{display:flex;flex-direction:column;justify-content:center;height:100%;}
+  .sec-no{font-family:"Jost",sans-serif;font-size:11px;letter-spacing:.18em;color:var(--accent-deep);font-weight:700;margin-bottom:18px;}
+  .sec-head{font-size:19px;line-height:1.78;color:var(--ink);margin-bottom:8px;letter-spacing:.03em;}
+  .sec-sub{font-size:12.5px;color:var(--ink-soft);letter-spacing:.04em;margin-bottom:30px;line-height:1.7;}
+  .sec-pending{border:1px dashed var(--paper-edge);border-radius:14px;padding:18px 16px;text-align:center;background:#FBF9F4;}
+  .sec-pending .pt{font-size:12px;color:var(--ink);margin-bottom:4px;letter-spacing:.04em;}
+  .sec-pending .pd{font-size:10.5px;color:var(--ink-soft);line-height:1.75;}
+
+  /* chapter end card */
+  .ch-end{margin-top:18px;border:1px dashed var(--paper-edge);border-radius:14px;padding:16px;text-align:center;background:#FBF9F4;}
+  .ch-end .et{font-size:12.5px;color:var(--ink);margin-bottom:3px;}
+  .ch-end .ed{font-size:10.5px;color:var(--ink-soft);line-height:1.7;}
+
+  @media (max-width:560px){
+    .phone{width:100vw;height:100dvh;box-shadow:none;}
+  }
+</style>
+</head>
+<body class="cover">
+
+<div class="phone">
+  <div class="screen" id="screen">
+
+    <div class="appbar">
+      <button class="tocbtn" id="tocbtn" aria-label="目次"><span></span><span></span><span></span></button>
+      <div class="title" id="appbar-title">プロローグ<small>LOCAL THINKING</small></div>
+      <div class="modetog" id="modetog">
+        <button data-mode="social" class="active">みんな</button>
+        <button data-mode="solo">ひとり</button>
+      </div>
+    </div>
+
+    <div class="viewport" id="viewport">
+      <div class="strip" id="strip">
+
+        <!-- 1: prologue title -->
+        <section class="page" data-chapter="prologue">
+          <div class="page-vignette">
+            <div class="kicker">PROLOGUE</div>
+            <div class="ptitle mincho">南房総のある朝、<br>私は東京を<br>見直した</div>
+          </div>
+        </section>
+
+        <!-- 2 -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho">
+            <p class="lead">東京から、車でたった八十分。南房総は、そのくらいの距離にある。</p>
+            <p>近いのに、流れている時間がまるで違う。<span class="hl h3" data-heat="312">海があり、山があり、田畑があり、ゆとりがあり、星がある。</span></p>
+          </div>
+        </section>
+
+        <!-- 3 -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho">
+            <p>南房総でローカルの仕事を始めて、三年。移り住んで、二年。</p>
+            <p>東京で広告をつくっていた頃の私には、想像もできなかった暮らしだ。<button class="marker" data-cmt="m1"><span class="ic">＋</span><span id="m1c">18</span></button></p>
+          </div>
+        </section>
+
+        <!-- 4 -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho">
+            <p>「のぼり」は、いつも一箇所に集約していく。</p>
+            <p><span class="hl h2" data-heat="156">そして「くだり」には、無限の広がりがある。</span><button class="marker" data-cmt="m2"><span class="ic" style="background:var(--sea)">✎</span>著者</button></p>
+            <div class="authnote">
+              <div class="ah"><div class="av">牧</div><div class="an">牧野 圭太</div><div class="ab">副音声</div></div>
+              <p>「くだり」には地図がない。だから怖いし、だから自由なんだと、住んでみて初めて分かりました。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5: O2O -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho">
+            <p>週末は、庭で火をおこす。子どもと肉をこね、自分たちのハンバーガーを焼く。</p>
+            <p>買うのではなく、つくる。それだけのことが、こんなにも豊かだとは思わなかった。</p>
+          </div>
+          <div class="o2o">
+            <div class="tag">📍 南房総より、あなたへ</div>
+            <div class="ot">今週末、海辺で一緒にBBQしませんか？</div>
+            <div class="od">この本を読んでいる人たちと、岩井海岸で火を囲みます。読むだけで終わらせない。</div>
+            <button id="o2obtn">イベントを見る →</button>
+          </div>
+        </section>
+
+        <!-- 6 -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho">
+            <p>私たちは、巨大なシステムの歯車になるためではなく、</p>
+            <p><span class="hl h3" data-heat="487">世界の一部になるために、生きている。</span><button class="marker" data-cmt="m3"><span class="ic">＋</span><span id="m3c">42</span></button></p>
+          </div>
+        </section>
+
+        <!-- 7 -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho">
+            <p>東京を、否定したいわけじゃない。</p>
+            <p>ただ、ローカルで暮らしてはじめて——東京の解像度が、ようやく上がったのだ。</p>
+          </div>
+        </section>
+
+        <!-- 8: grow -->
+        <section class="page" data-chapter="prologue">
+          <div class="prose mincho" style="flex:none;">
+            <p style="font-size:13px;color:var(--ink-soft);">——プロローグ、おわり。</p>
+          </div>
+          <div class="grow">
+            <div class="gt mincho">この本は、まだ書かれている途中です。</div>
+            <div class="gd">第1章「ローカルって、こんなに面白い」は近日公開。<br>章が増えるたび、あなたのもとへ届きます。</div>
+            <div class="switch" id="notify"><span class="track"><i></i></span><span>新しい章が公開されたら知らせる</span></div>
+          </div>
+        </section>
+
+      </div>
+      <div class="swipehint" id="swipehint">← スワイプ、または ← → キーでめくる →</div>
+    </div>
+
+    <div class="botbar">
+      <button class="nav" id="prev">‹</button>
+      <div class="progwrap">
+        <div class="progline"><i id="prog"></i></div>
+        <div class="pgnum" id="pgnum">P.1　／　8</div>
+      </div>
+      <button class="nav" id="next">›</button>
+    </div>
+
+    <!-- ===== COVER (photo + layered logo + obi) ===== -->
+    <section class="cover" id="cover">
+      <div class="cv-screen">
+        <div class="cv-photo"></div>
+        <img class="cv-logomain" src="images/logo_main.png" alt="LOCAL THINKING">
+        <div class="cv-fg"></div>
+        <div class="cv-botscrim"></div>
+        <div class="cv-frame">
+          <div class="cv-top">
+            <img class="cv-logoyoko" src="images/logo_yoko.png" alt="LOCAL THINKING">
+            <button class="cv-menu" id="cvmenu" aria-label="目次"><span></span><span></span><span></span></button>
+          </div>
+          <div class="cv-sub-v"><span>ローカル思考で見つける</span><span>資本主義のオルタナティブ</span></div>
+          <div class="cv-author">Keita Makino</div>
+          <button class="cv-enter" id="cventer" aria-label="推薦のことばへ"><span class="lbl">SCROLL</span><span class="dn"></span></button>
+          <div class="cv-mark" id="cvmark">しおり <b id="cvmarkp">P.2</b> から続ける</div>
+        </div>
+      </div>
+      <div class="cv-obi">
+        <div class="obi-kicker">RECOMMENDED</div>
+        <div class="obi-head">この本に寄せて</div>
+        <blockquote class="obi-q">
+          <p>東京で消耗していた頃の自分に、まっさきに読ませたかった。「降りる」ことは、負けることじゃない。</p>
+          <cite>— あおき りな（コピーライター）</cite>
+        </blockquote>
+        <blockquote class="obi-q">
+          <p>ページをめくるたびに、呼吸が深くなる。これは、生き方のための処方箋のような本だ。</p>
+          <cite>— もりた けんいち（編集者）</cite>
+        </blockquote>
+        <blockquote class="obi-q">
+          <p>資本主義の「外」ではなく、その内側に空いた抜け道を、そっと教えてくれる一冊。</p>
+          <cite>— にしの さき（書店員）</cite>
+        </blockquote>
+        <button class="obi-enter" id="obienter">本文を読みはじめる →</button>
+        <div class="obi-note">※推薦コメントはサンプルです（本実装時に差し替え）</div>
+      </div>
+    </section>
+
+    <!-- ===== TABLE OF CONTENTS ===== -->
+    <div class="toc" id="toc">
+      <div class="toc-head">
+        <span class="toc-ttl">目次</span>
+        <button class="toc-x" id="tocclose" aria-label="閉じる">×</button>
+      </div>
+      <div class="toc-body">
+        <button class="toc-row current" data-jump="prologue">
+          <span class="toc-no">序</span>
+          <span class="toc-tx"><b>プロローグ</b><i>南房総のある朝、私は東京を見直した</i></span>
+          <span class="toc-state">読む ›</span>
+        </button>
+        <button class="toc-row" data-jump="ch1">
+          <span class="toc-no">1</span>
+          <span class="toc-tx"><b>ローカルって、こんなに面白い</b><i>降りた先にあるものの、概要</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="ch2">
+          <span class="toc-no">2</span>
+          <span class="toc-tx"><b>東京は何が壊れているのか</b><i>グローバル資本主義の症状と構造</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="ch3">
+          <span class="toc-no">3</span>
+          <span class="toc-tx"><b>「ローカル思考」というOS</b><i>2年半で見えてきたもの</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="ch4">
+          <span class="toc-no">4</span>
+          <span class="toc-tx"><b>私がローカルで取り戻したもの</b><i>個人の生き方が楽になる</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="ch5">
+          <span class="toc-no">5</span>
+          <span class="toc-tx"><b>社会のもう一つの可能性</b><i>私が南房総で見ている風景</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="ch6">
+          <span class="toc-no">6</span>
+          <span class="toc-tx"><b>自分の生き方を、ちゃんと選ぶ</b><i>個と社会への手渡し</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="epilogue">
+          <span class="toc-no">結</span>
+          <span class="toc-tx"><b>エピローグ</b><i>南房総で、待っています</i></span>
+          <span class="toc-state">骨組み ›</span>
+        </button>
+        <button class="toc-row" data-jump="__cover">
+          <span class="toc-no">⌂</span>
+          <span class="toc-tx"><b>表紙にもどる</b><i>推薦の帯・しおり</i></span>
+          <span class="toc-state">›</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet" id="sheet">
+      <div class="grab"></div>
+      <div class="sh-head"><h3 id="shtitle">このページへの書き込み</h3><p id="shsub"></p></div>
+      <div class="sh-body" id="shbody"></div>
+      <div class="composer">
+        <div class="fake" id="fakeinput">感想やエピソードを書く…</div>
+        <button class="send" id="sendbtn">↑</button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+  </div>
+</div>
+
+<script>
+(async function(){
+  "use strict";
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+
+  /* ===== book data (loaded from data/book.json) ===== */
+  var BOOK;
+  try{
+    var res = await fetch('data/book.json',{cache:'no-cache'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    BOOK = await res.json();
+  }catch(err){
+    console.error('book.json load failed:',err);
+    document.body.innerHTML = '<div style="padding:24px;font-family:sans-serif;color:#A9572A;line-height:1.7;">本のデータを読み込めませんでした。<br>ローカルでは <code>python3 -m http.server</code> などHTTPサーバ越しに開いてください（file:// では fetch がブロックされます）。</div>';
+    return;
+  }
+
+  /* ===== build skeleton chapter pages into strip ===== */
+  var strip=el('strip');
+  function buildSkeletons(){
+    var html='';
+    for(var i=1;i<BOOK.length;i++){
+      var ch=BOOK[i];
+      html += '<section class="page" data-chapter="'+ch.id+'">'
+            + '<div class="ch-cover">'
+            +   '<div class="ch-no">'+esc(ch.kicker)+'</div>'
+            +   '<div class="ch-title mincho">'+esc(ch.title)+'</div>'
+            +   (ch.subtitle?'<div class="ch-sub mincho">'+esc(ch.subtitle)+'</div>':'')
+            +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">ONLY HERE</div>'+esc(ch.onlyHere)+'</div>':'')
+            +   '<div class="ch-meta">'
+            +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
+            +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
+            +   '</div>'
+            + '</div></section>';
+      ch.sections.forEach(function(s,sidx){
+        var last = sidx === ch.sections.length-1;
+        html += '<section class="page" data-chapter="'+ch.id+'">'
+              + '<div class="sec-page">'
+              +   '<div class="sec-no">'+esc(s.no)+'</div>'
+              +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
+              +   (s.sub?'<div class="sec-sub mincho">'+esc(s.sub)+'</div>':'')
+              +   '<div class="sec-pending"><div class="pt mincho">本文は鋭意執筆中です</div><div class="pd">公開時には、ここに著者の体験と思考が綴られます。</div></div>'
+              +   (last?'<div class="ch-end"><div class="et mincho">— '+esc(ch.title)+'、章末（予定）</div><div class="ed">次の章へ進むと、骨組みが続きます。</div></div>':'')
+              + '</div></section>';
+      });
+    }
+    strip.insertAdjacentHTML('beforeend', html);
+  }
+  buildSkeletons();
+
+  /* ===== page index ===== */
+  var pageMap=[], chapterRanges={}, TOTAL=0;
+  function indexPages(){
+    pageMap=[]; chapterRanges={};
+    var pages=strip.querySelectorAll('.page');
+    pages.forEach(function(p,i){
+      var cid=p.dataset.chapter;
+      pageMap[i]=cid;
+      if(!chapterRanges[cid]) chapterRanges[cid]={start:i,len:0};
+      chapterRanges[cid].len++;
+    });
+    TOTAL=pages.length;
+  }
+  indexPages();
+  function chapterOf(globalIdx){
+    var cid=pageMap[globalIdx];
+    for(var i=0;i<BOOK.length;i++){ if(BOOK[i].id===cid) return BOOK[i]; }
+    return BOOK[0];
+  }
+  function chapterPrefix(ch){
+    if(ch.id==='prologue') return 'プロローグ';
+    if(ch.id==='epilogue') return 'エピローグ';
+    return '第'+ch.no+'章';
+  }
+  function bookmarkLabel(globalIdx){
+    var ch=chapterOf(globalIdx);
+    var r=chapterRanges[ch.id];
+    var p=globalIdx - r.start + 1;
+    return chapterPrefix(ch)+' P.'+p;
+  }
+
+  /* ===== state ===== */
+  var idx=0;
+  var viewport=el('viewport'), prog=el('prog'), pgnum=el('pgnum');
+  var prevBtn=el('prev'), nextBtn=el('next'), cover=el('cover');
+  var toc=el('toc'), sheet=el('sheet'), scrim=el('scrim');
+  var titleEl=el('appbar-title');
+  var toastEl=el('toast'), toastT;
+
+  function toast(msg){
+    toastEl.textContent=msg; toastEl.classList.add('show');
+    clearTimeout(toastT);
+    toastT=setTimeout(function(){ toastEl.classList.remove('show'); },2400);
+  }
+
+  /* ===== bookmark ===== */
+  var KEY='lt_webbook_page', savedIdx=0;
+  function save(){ try{ localStorage.setItem(KEY,String(idx)); }catch(e){} }
+  try{
+    var v=parseInt(localStorage.getItem(KEY),10);
+    if(v>0 && v<TOTAL){
+      savedIdx=v;
+      el('cvmarkp').textContent=bookmarkLabel(v);
+      el('cvmark').style.display='inline-flex';
+    }
+  }catch(e){}
+
+  /* ===== render ===== */
+  function render(){
+    strip.style.transform='translateX('+(-idx*100)+'%)';
+    var ch=chapterOf(idx);
+    var r=chapterRanges[ch.id];
+    var pInCh=idx - r.start;
+    prog.style.width=(pInCh/Math.max(1,(r.len-1))*100)+'%';
+    pgnum.textContent='P.'+(pInCh+1)+'　／　'+r.len;
+    /* appbar title */
+    var sub = ch.id==='prologue' ? 'LOCAL THINKING'
+            : ch.id==='epilogue' ? '南房総で、待っています'
+            : ch.title;
+    titleEl.innerHTML = esc(chapterPrefix(ch)) + '<small>'+esc(sub)+'</small>';
+    /* TOC current row */
+    toc.querySelectorAll('.toc-row').forEach(function(row){
+      row.classList.toggle('current', row.dataset.jump===ch.id);
+    });
+    prevBtn.disabled=idx===0;
+    nextBtn.disabled=idx===TOTAL-1;
+  }
+  function go(n){
+    idx=Math.max(0,Math.min(TOTAL-1,n));
+    strip.classList.add('anim');
+    render(); save();
+  }
+
+  /* ===== cover open / close ===== */
+  function openBook(){ cover.classList.add('dismissed'); document.body.classList.remove('cover'); }
+  function showCover(){ cover.classList.remove('dismissed'); document.body.classList.add('cover'); cover.scrollTop=0; }
+  el('cventer').addEventListener('click',function(e){ e.stopPropagation();
+    var obi=cover.querySelector('.cv-obi'); if(obi) obi.scrollIntoView({behavior:'smooth'}); });
+  el('obienter').addEventListener('click',function(e){ e.stopPropagation(); openBook(); });
+  el('cvmark').addEventListener('click',function(e){ e.stopPropagation(); go(savedIdx); openBook(); });
+
+  /* ===== table of contents ===== */
+  function openToc(){ toc.classList.add('show'); }
+  function closeToc(){ toc.classList.remove('show'); }
+  el('tocbtn').addEventListener('click',openToc);
+  el('cvmenu').addEventListener('click',function(e){ e.stopPropagation(); openToc(); });
+  el('tocclose').addEventListener('click',closeToc);
+  toc.querySelectorAll('[data-jump]').forEach(function(row){
+    row.addEventListener('click',function(){
+      var dest=row.dataset.jump;
+      closeToc();
+      if(dest==='__cover'){ showCover(); return; }
+      if(document.body.classList.contains('cover')) openBook();
+      var r=chapterRanges[dest];
+      if(r) go(r.start);
+    });
+  });
+
+  /* keyboard */
+  window.addEventListener('keydown',function(e){
+    if(toc.classList.contains('show')){ if(e.key==='Escape') closeToc(); return; }
+    if(sheet.classList.contains('show')){ if(e.key==='Escape') closeSheet(); return; }
+    if(document.body.classList.contains('cover')){
+      if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); openBook(); }
+      return;
+    }
+    if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); go(idx+1); }
+    if(e.key==='ArrowLeft'){ e.preventDefault(); go(idx-1); }
+  });
+  prevBtn.addEventListener('click',function(){ go(idx-1); });
+  nextBtn.addEventListener('click',function(){ go(idx+1); });
+
+  /* pointer swipe */
+  var startX=0,startY=0,dragging=false,decided=false,horiz=false,w=1;
+  viewport.addEventListener('pointerdown',function(e){
+    if(e.target.closest('.marker,.o2o,.switch')) return;
+    dragging=true; decided=false; horiz=false;
+    startX=e.clientX; startY=e.clientY; w=viewport.clientWidth||1;
+    strip.classList.remove('anim');
+  });
+  window.addEventListener('pointermove',function(e){
+    if(!dragging) return;
+    var dx=e.clientX-startX, dy=e.clientY-startY;
+    if(!decided){
+      if(Math.abs(dx)>8||Math.abs(dy)>8){ decided=true; horiz=Math.abs(dx)>Math.abs(dy); }
+      else return;
+    }
+    if(!horiz) return;
+    e.preventDefault();
+    var off=dx;
+    if((idx===0&&dx>0)||(idx===TOTAL-1&&dx<0)) off=dx*0.32;
+    strip.style.transform='translateX('+(-idx*100+(off/w*100))+'%)';
+  },{passive:false});
+  window.addEventListener('pointerup',function(e){
+    if(!dragging) return;
+    dragging=false;
+    if(!horiz) return;
+    var dx=e.clientX-startX, th=w*0.16;
+    strip.classList.add('anim');
+    if(dx<=-th) go(idx+1);
+    else if(dx>=th) go(idx-1);
+    else render();
+  });
+  viewport.addEventListener('dragstart',function(e){ e.preventDefault(); });
+
+  /* read-mode toggle */
+  var modetog=el('modetog');
+  modetog.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    modetog.querySelectorAll('button').forEach(function(x){ x.classList.remove('active'); });
+    b.classList.add('active');
+    var solo=b.dataset.mode==='solo';
+    document.body.classList.toggle('solo',solo);
+    toast(solo?'ひとり読みモード：書き込みを隠しました':'みんな読みモード：読者の熱が見えます');
+  });
+
+  /* heatmap */
+  document.querySelectorAll('.hl').forEach(function(h){
+    h.addEventListener('click',function(){
+      if(document.body.classList.contains('solo')) return;
+      toast(h.dataset.heat+'人が、この一文に線を引きました');
+    });
+  });
+
+  /* comments */
+  var COMMENTS={
+    m1:{sub:'18件の書き込み',items:[
+      {nm:'さとう ゆき',role:'reader',tx:'わたしも去年、館山に引っ越しました。最初の冬の、あの静けさが忘れられない。',meta:'2日前'},
+      {nm:'こばやし',role:'reader',tx:'「三年」と「二年」のわずかなズレが妙にリアルで、思わず線を引きました。',meta:'5日前'},
+      {nm:'はやし みき',role:'reader',tx:'二拠点から始めようか迷っています。背中を押された気がする。',meta:'1週間前'}
+    ]},
+    m2:{sub:'著者からの副音声',items:[
+      {nm:'牧野 圭太',role:'author',tx:'この「のぼり／くだり」という対比、note記事を書いているときに初めて出てきた言葉でした。本書の背骨になる予感がしています。',meta:'著者 ・ 3日前'}
+    ]},
+    m3:{sub:'42件の書き込み',items:[
+      {nm:'みなみ あおい',role:'reader',tx:'ここ、何度も読み返しました。「歯車」という言葉、ずっと喉に刺さっていた気がします。',meta:'昨日'},
+      {nm:'牧野 圭太',role:'author',tx:'「歯車ではなく、世界の一部に」——これはタイトルの裏テーマなんです。終章で必ずもう一度、戻ってきます。',meta:'著者 ・ 昨日'},
+      {nm:'たなか',role:'reader',tx:'通勤電車で読んでいて、ちょっと泣きそうになりました。',meta:'3日前'}
+    ]}
+  };
+  function openSheet(id){
+    var data=COMMENTS[id]; if(!data) return;
+    el('shsub').textContent=data.sub;
+    var body=el('shbody'); body.innerHTML='';
+    data.items.forEach(function(c){
+      var av=c.nm.slice(0,1);
+      var d=document.createElement('div');
+      d.className='cmt'+(c.role==='author'?' author':'');
+      d.innerHTML='<div class="av">'+av+'</div><div class="bd">'+
+        '<div class="nm">'+c.nm+(c.role==='author'?'<span class="badge">著者</span>':'')+'</div>'+
+        '<div class="tx">'+c.tx+'</div><div class="meta">'+c.meta+'</div></div>';
+      body.appendChild(d);
+    });
+    scrim.classList.add('show'); sheet.classList.add('show');
+  }
+  function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
+  scrim.addEventListener('click',closeSheet);
+  document.querySelectorAll('.marker').forEach(function(m){
+    m.addEventListener('click',function(e){ e.stopPropagation(); openSheet(m.dataset.cmt); });
+  });
+  el('fakeinput').addEventListener('click',function(){ toast('（プロトタイプ）コメント投稿は本実装で対応します'); });
+  el('sendbtn').addEventListener('click',function(){ toast('（プロトタイプ）コメント投稿は本実装で対応します'); });
+
+  /* O2O */
+  el('o2obtn').addEventListener('click',function(){ toast('（プロトタイプ）イベント参加ページへ遷移します'); });
+
+  /* notify */
+  var notify=el('notify');
+  notify.addEventListener('click',function(){
+    notify.classList.toggle('on');
+    toast(notify.classList.contains('on')?'通知をオンにしました。次の章でお会いしましょう':'通知をオフにしました');
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
