@@ -501,17 +501,28 @@
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
 
-  /* ===== book + comments data (loaded from /data) ===== */
+  /* ===== data loader =====
+     stage 1: book.json (manifest) + comments.json
+     stage 2: data/chapters/{id}.json for every chapter (parallel)
+     merge:   BOOK[i] = manifest[i]  ∪  chapter_content[i]
+  */
+  function fetchJson(url){
+    return fetch(url,{cache:'no-cache'}).then(function(r){
+      if(!r.ok) throw new Error(url+' HTTP '+r.status);
+      return r.json();
+    });
+  }
   var BOOK, COMMENTS;
   try{
-    var [bookRes, commentsRes] = await Promise.all([
-      fetch('data/book.json',{cache:'no-cache'}),
-      fetch('data/comments.json',{cache:'no-cache'})
+    var [manifest, comments] = await Promise.all([
+      fetchJson('data/book.json'),
+      fetchJson('data/comments.json')
     ]);
-    if(!bookRes.ok)     throw new Error('book.json HTTP '+bookRes.status);
-    if(!commentsRes.ok) throw new Error('comments.json HTTP '+commentsRes.status);
-    BOOK     = await bookRes.json();
-    COMMENTS = await commentsRes.json();
+    COMMENTS = comments;
+    var chapterContents = await Promise.all(
+      manifest.map(function(ch){ return fetchJson('data/chapters/'+ch.id+'.json'); })
+    );
+    BOOK = manifest.map(function(ch, i){ return Object.assign({}, ch, chapterContents[i]); });
   }catch(err){
     console.error('data load failed:',err);
     document.body.innerHTML = '<div style="padding:24px;font-family:sans-serif;color:#A9572A;line-height:1.7;">本のデータを読み込めませんでした。<br>ローカルでは <code>python3 -m http.server</code> などHTTPサーバ越しに開いてください（file:// では fetch がブロックされます）。</div>';
