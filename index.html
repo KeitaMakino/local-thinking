@@ -371,6 +371,11 @@
     padding:14px;border-radius:11px;cursor:pointer;transition:.15s;font-family:inherit;letter-spacing:.04em;
   }
   .paywall button:active{transform:scale(.98);background:var(--accent-deep);}
+  .paywall .pw-bonus{
+    margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);
+    font-size:11px;color:#C9C0AE;letter-spacing:.04em;line-height:1.8;
+  }
+  .paywall .pw-bonus span{color:#7A715E;font-size:10px;}
 
   /* locked section placeholder (paid skeleton, not purchased) */
   .sec-pending.locked{background:#F1ECE0;border-color:#D6CDB9;}
@@ -646,10 +651,11 @@
   function renderPaywall(){
     return '<div class="paywall">'
          + '<div class="pw-lock">🔒</div>'
-         + '<div class="pw-title mincho">続きは、コミュニティで。</div>'
-         + '<div class="pw-body">第1〜6章＋エピローグの本文は、<br>購入とコミュニティ参加で読めます。</div>'
-         + '<div class="pw-price"><b>¥1,000</b>買い切り＋コミュニティ参加</div>'
-         + '<button id="pwbtn" type="button">続きを読む →</button>'
+         + '<div class="pw-title mincho">続きは、書籍の購入で。</div>'
+         + '<div class="pw-body">第1〜6章＋エピローグの本文を、<br>すべて読めるようになります。</div>'
+         + '<div class="pw-price"><b>¥1,000</b>一冊買い切り</div>'
+         + '<button id="pwbtn" type="button">書籍を購入する →</button>'
+         + '<div class="pw-bonus">＋ 購入特典：読者コミュニティへの参加つき<br><span>（著者との対話・月一回の岩井海岸読者会など）</span></div>'
          + '</div>';
   }
   function renderOutro(b){
@@ -704,7 +710,7 @@
                 +   (s.sub?'<div class="sec-sub mincho">'+esc(s.sub)+'</div>':'')
                 +   '<div class="sec-pending'+(chLocked?' locked':'')+'">'
                 +     '<div class="pt mincho">'+(chLocked?'🔒 本文ロック中':'本文は鋭意執筆中です')+'</div>'
-                +     '<div class="pd">'+(chLocked?'続きを読むには、購入＋コミュニティ参加が必要です。':'公開時には、ここに著者の体験と思考が綴られます。')+'</div>'
+                +     '<div class="pd">'+(chLocked?'本書の購入で、すべての本文が読めるようになります。':'公開時には、ここに著者の体験と思考が綴られます。')+'</div>'
                 +   '</div>'
                 +   (last?'<div class="ch-end"><div class="et mincho">— '+esc(ch.title)+'、章末（予定）</div><div class="ed">次の章へ進むと、骨組みが続きます。</div></div>':'')
                 + '</div></section>';
@@ -919,7 +925,7 @@
       toast('（プロトタイプ）イベント参加ページへ遷移します'); return;
     }
     if(e.target.id==='pwbtn'){
-      toast('（プロトタイプ）購入＋コミュニティ参加フローへ遷移します'); return;
+      toast('（プロトタイプ）書籍購入フローへ遷移します'); return;
     }
     var sw = e.target.closest('.switch');
     if(sw && sw.id==='notify'){
