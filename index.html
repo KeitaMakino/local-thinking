@@ -350,6 +350,9 @@
   .ch-end .et{font-size:12.5px;color:var(--ink);margin-bottom:3px;}
   .ch-end .ed{font-size:10.5px;color:var(--ink-soft);line-height:1.7;}
 
+  /* outro line (e.g. プロローグ、おわり。) */
+  .outro{font-size:13px;color:var(--ink-soft);}
+
   @media (max-width:560px){
     .phone{width:100vw;height:100dvh;box-shadow:none;}
   }
@@ -370,87 +373,7 @@
     </div>
 
     <div class="viewport" id="viewport">
-      <div class="strip" id="strip">
-
-        <!-- 1: prologue title -->
-        <section class="page" data-chapter="prologue">
-          <div class="page-vignette">
-            <div class="kicker">PROLOGUE</div>
-            <div class="ptitle mincho">南房総のある朝、<br>私は東京を<br>見直した</div>
-          </div>
-        </section>
-
-        <!-- 2 -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho">
-            <p class="lead">東京から、車でたった八十分。南房総は、そのくらいの距離にある。</p>
-            <p>近いのに、流れている時間がまるで違う。<span class="hl h3" data-heat="312">海があり、山があり、田畑があり、ゆとりがあり、星がある。</span></p>
-          </div>
-        </section>
-
-        <!-- 3 -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho">
-            <p>南房総でローカルの仕事を始めて、三年。移り住んで、二年。</p>
-            <p>東京で広告をつくっていた頃の私には、想像もできなかった暮らしだ。<button class="marker" data-cmt="m1"><span class="ic">＋</span><span id="m1c">18</span></button></p>
-          </div>
-        </section>
-
-        <!-- 4 -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho">
-            <p>「のぼり」は、いつも一箇所に集約していく。</p>
-            <p><span class="hl h2" data-heat="156">そして「くだり」には、無限の広がりがある。</span><button class="marker" data-cmt="m2"><span class="ic" style="background:var(--sea)">✎</span>著者</button></p>
-            <div class="authnote">
-              <div class="ah"><div class="av">牧</div><div class="an">牧野 圭太</div><div class="ab">副音声</div></div>
-              <p>「くだり」には地図がない。だから怖いし、だから自由なんだと、住んでみて初めて分かりました。</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- 5: O2O -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho">
-            <p>週末は、庭で火をおこす。子どもと肉をこね、自分たちのハンバーガーを焼く。</p>
-            <p>買うのではなく、つくる。それだけのことが、こんなにも豊かだとは思わなかった。</p>
-          </div>
-          <div class="o2o">
-            <div class="tag">📍 南房総より、あなたへ</div>
-            <div class="ot">今週末、海辺で一緒にBBQしませんか？</div>
-            <div class="od">この本を読んでいる人たちと、岩井海岸で火を囲みます。読むだけで終わらせない。</div>
-            <button id="o2obtn">イベントを見る →</button>
-          </div>
-        </section>
-
-        <!-- 6 -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho">
-            <p>私たちは、巨大なシステムの歯車になるためではなく、</p>
-            <p><span class="hl h3" data-heat="487">世界の一部になるために、生きている。</span><button class="marker" data-cmt="m3"><span class="ic">＋</span><span id="m3c">42</span></button></p>
-          </div>
-        </section>
-
-        <!-- 7 -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho">
-            <p>東京を、否定したいわけじゃない。</p>
-            <p>ただ、ローカルで暮らしてはじめて——東京の解像度が、ようやく上がったのだ。</p>
-          </div>
-        </section>
-
-        <!-- 8: grow -->
-        <section class="page" data-chapter="prologue">
-          <div class="prose mincho" style="flex:none;">
-            <p style="font-size:13px;color:var(--ink-soft);">——プロローグ、おわり。</p>
-          </div>
-          <div class="grow">
-            <div class="gt mincho">この本は、まだ書かれている途中です。</div>
-            <div class="gd">第1章「ローカルって、こんなに面白い」は近日公開。<br>章が増えるたび、あなたのもとへ届きます。</div>
-            <div class="switch" id="notify"><span class="track"><i></i></span><span>新しい章が公開されたら知らせる</span></div>
-          </div>
-        </section>
-
-      </div>
+      <div class="strip" id="strip"></div>
       <div class="swipehint" id="swipehint">← スワイプ、または ← → キーでめくる →</div>
     </div>
 
@@ -578,50 +501,146 @@
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
 
-  /* ===== book data (loaded from data/book.json) ===== */
-  var BOOK;
+  /* ===== book + comments data (loaded from /data) ===== */
+  var BOOK, COMMENTS;
   try{
-    var res = await fetch('data/book.json',{cache:'no-cache'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    BOOK = await res.json();
+    var [bookRes, commentsRes] = await Promise.all([
+      fetch('data/book.json',{cache:'no-cache'}),
+      fetch('data/comments.json',{cache:'no-cache'})
+    ]);
+    if(!bookRes.ok)     throw new Error('book.json HTTP '+bookRes.status);
+    if(!commentsRes.ok) throw new Error('comments.json HTTP '+commentsRes.status);
+    BOOK     = await bookRes.json();
+    COMMENTS = await commentsRes.json();
   }catch(err){
-    console.error('book.json load failed:',err);
+    console.error('data load failed:',err);
     document.body.innerHTML = '<div style="padding:24px;font-family:sans-serif;color:#A9572A;line-height:1.7;">本のデータを読み込めませんでした。<br>ローカルでは <code>python3 -m http.server</code> などHTTPサーバ越しに開いてください（file:// では fetch がブロックされます）。</div>';
     return;
   }
 
-  /* ===== build skeleton chapter pages into strip ===== */
-  var strip=el('strip');
-  function buildSkeletons(){
-    var html='';
-    for(var i=1;i<BOOK.length;i++){
-      var ch=BOOK[i];
-      html += '<section class="page" data-chapter="'+ch.id+'">'
-            + '<div class="ch-cover">'
-            +   '<div class="ch-no">'+esc(ch.kicker)+'</div>'
-            +   '<div class="ch-title mincho">'+esc(ch.title)+'</div>'
-            +   (ch.subtitle?'<div class="ch-sub mincho">'+esc(ch.subtitle)+'</div>':'')
-            +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">ONLY HERE</div>'+esc(ch.onlyHere)+'</div>':'')
-            +   '<div class="ch-meta">'
-            +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
-            +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
-            +   '</div>'
-            + '</div></section>';
-      ch.sections.forEach(function(s,sidx){
-        var last = sidx === ch.sections.length-1;
-        html += '<section class="page" data-chapter="'+ch.id+'">'
-              + '<div class="sec-page">'
-              +   '<div class="sec-no">'+esc(s.no)+'</div>'
-              +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
-              +   (s.sub?'<div class="sec-sub mincho">'+esc(s.sub)+'</div>':'')
-              +   '<div class="sec-pending"><div class="pt mincho">本文は鋭意執筆中です</div><div class="pd">公開時には、ここに著者の体験と思考が綴られます。</div></div>'
-              +   (last?'<div class="ch-end"><div class="et mincho">— '+esc(ch.title)+'、章末（予定）</div><div class="ed">次の章へ進むと、骨組みが続きます。</div></div>':'')
-              + '</div></section>';
-      });
+  /* ===== block renderers (prose / authnote / o2o / grow / title / outro) ===== */
+  function brLines(arr){ return (arr||[]).map(esc).join('<br>'); }
+
+  function renderSpan(s){
+    if(s.hl){
+      var lvl = s.hl.level ? ' h'+s.hl.level : '';
+      return '<span class="hl'+lvl+'" data-heat="'+esc(s.hl.heat)+'">'+esc(s.text)+'</span>';
     }
-    strip.insertAdjacentHTML('beforeend', html);
+    if(s.marker){
+      var c = COMMENTS[s.marker];
+      if(!c) return '';
+      if(c.kind === 'author'){
+        return '<button class="marker" data-cmt="'+esc(s.marker)+'">'
+             + '<span class="ic" style="background:var(--sea)">✎</span>'+esc(c.label||'著者')+'</button>';
+      }
+      return '<button class="marker" data-cmt="'+esc(s.marker)+'">'
+           + '<span class="ic">＋</span>'+esc(c.count)+'</button>';
+    }
+    return esc(s.text);
   }
-  buildSkeletons();
+  function renderPara(p){
+    var cls = p.lead ? ' class="lead"' : '';
+    var inner = p.spans ? p.spans.map(renderSpan).join('') : esc(p.text);
+    return '<p'+cls+'>'+inner+'</p>';
+  }
+  function renderProse(b){
+    return '<div class="prose mincho">'+(b.paragraphs||[]).map(renderPara).join('')+'</div>';
+  }
+  function renderTitle(b){
+    return '<div class="page-vignette">'
+         + '<div class="kicker">'+esc(b.kicker)+'</div>'
+         + '<div class="ptitle mincho">'+brLines(b.lines)+'</div>'
+         + '</div>';
+  }
+  function renderAuthnote(b){
+    return '<div class="authnote">'
+         + '<div class="ah">'
+         +   '<div class="av">'+esc(b.avatar)+'</div>'
+         +   '<div class="an">'+esc(b.name)+'</div>'
+         +   (b.badge ? '<div class="ab">'+esc(b.badge)+'</div>' : '')
+         + '</div>'
+         + '<p>'+esc(b.text)+'</p>'
+         + '</div>';
+  }
+  function renderO2O(b){
+    return '<div class="o2o">'
+         + '<div class="tag">'+esc(b.tag)+'</div>'
+         + '<div class="ot">'+esc(b.title)+'</div>'
+         + '<div class="od">'+esc(b.body)+'</div>'
+         + '<button id="o2obtn">'+esc(b.cta)+'</button>'
+         + '</div>';
+  }
+  function renderGrow(b){
+    var body = Array.isArray(b.body) ? brLines(b.body) : esc(b.body||'');
+    var html = '<div class="grow">'
+             + '<div class="gt mincho">'+esc(b.title)+'</div>'
+             + '<div class="gd">'+body+'</div>';
+    if(b.switch){
+      html += '<div class="switch" id="'+esc(b.switch.id)+'">'
+            + '<span class="track"><i></i></span>'
+            + '<span>'+esc(b.switch.label)+'</span></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+  function renderOutro(b){
+    return '<div class="outro mincho">'+esc(b.text)+'</div>';
+  }
+  function renderBlock(b){
+    switch(b && b.type){
+      case 'title':    return renderTitle(b);
+      case 'prose':    return renderProse(b);
+      case 'authnote': return renderAuthnote(b);
+      case 'o2o':      return renderO2O(b);
+      case 'grow':     return renderGrow(b);
+      case 'outro':    return renderOutro(b);
+      default: return '';
+    }
+  }
+
+  /* ===== build all chapter pages into strip =====
+     - chapters with explicit `pages`     → render block-by-block (ready chapters)
+     - chapters with `sections` only      → auto-generate ch-cover + section pages (skeleton)
+  */
+  var strip = el('strip');
+  function buildAllChapters(){
+    var html = '';
+    for(var i=0; i<BOOK.length; i++){
+      var ch = BOOK[i];
+      if(ch.pages && ch.pages.length){
+        ch.pages.forEach(function(page){
+          html += '<section class="page" data-chapter="'+esc(ch.id)+'">';
+          (page.blocks||[]).forEach(function(b){ html += renderBlock(b); });
+          html += '</section>';
+        });
+      } else if(ch.sections){
+        html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
+              + '<div class="ch-cover">'
+              +   '<div class="ch-no">'+esc(ch.kicker)+'</div>'
+              +   '<div class="ch-title mincho">'+esc(ch.title)+'</div>'
+              +   (ch.subtitle?'<div class="ch-sub mincho">'+esc(ch.subtitle)+'</div>':'')
+              +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">ONLY HERE</div>'+esc(ch.onlyHere)+'</div>':'')
+              +   '<div class="ch-meta">'
+              +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
+              +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
+              +   '</div>'
+              + '</div></section>';
+        ch.sections.forEach(function(s, sidx){
+          var last = sidx === ch.sections.length-1;
+          html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
+                + '<div class="sec-page">'
+                +   '<div class="sec-no">'+esc(s.no)+'</div>'
+                +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
+                +   (s.sub?'<div class="sec-sub mincho">'+esc(s.sub)+'</div>':'')
+                +   '<div class="sec-pending"><div class="pt mincho">本文は鋭意執筆中です</div><div class="pd">公開時には、ここに著者の体験と思考が綴られます。</div></div>'
+                +   (last?'<div class="ch-end"><div class="et mincho">— '+esc(ch.title)+'、章末（予定）</div><div class="ed">次の章へ進むと、骨組みが続きます。</div></div>':'')
+                + '</div></section>';
+        });
+      }
+    }
+    strip.innerHTML = html;
+  }
+  buildAllChapters();
 
   /* ===== page index ===== */
   var pageMap=[], chapterRanges={}, TOTAL=0;
@@ -797,33 +816,18 @@
     });
   });
 
-  /* comments */
-  var COMMENTS={
-    m1:{sub:'18件の書き込み',items:[
-      {nm:'さとう ゆき',role:'reader',tx:'わたしも去年、館山に引っ越しました。最初の冬の、あの静けさが忘れられない。',meta:'2日前'},
-      {nm:'こばやし',role:'reader',tx:'「三年」と「二年」のわずかなズレが妙にリアルで、思わず線を引きました。',meta:'5日前'},
-      {nm:'はやし みき',role:'reader',tx:'二拠点から始めようか迷っています。背中を押された気がする。',meta:'1週間前'}
-    ]},
-    m2:{sub:'著者からの副音声',items:[
-      {nm:'牧野 圭太',role:'author',tx:'この「のぼり／くだり」という対比、note記事を書いているときに初めて出てきた言葉でした。本書の背骨になる予感がしています。',meta:'著者 ・ 3日前'}
-    ]},
-    m3:{sub:'42件の書き込み',items:[
-      {nm:'みなみ あおい',role:'reader',tx:'ここ、何度も読み返しました。「歯車」という言葉、ずっと喉に刺さっていた気がします。',meta:'昨日'},
-      {nm:'牧野 圭太',role:'author',tx:'「歯車ではなく、世界の一部に」——これはタイトルの裏テーマなんです。終章で必ずもう一度、戻ってきます。',meta:'著者 ・ 昨日'},
-      {nm:'たなか',role:'reader',tx:'通勤電車で読んでいて、ちょっと泣きそうになりました。',meta:'3日前'}
-    ]}
-  };
+  /* comments (data loaded at top from data/comments.json) */
   function openSheet(id){
     var data=COMMENTS[id]; if(!data) return;
     el('shsub').textContent=data.sub;
     var body=el('shbody'); body.innerHTML='';
     data.items.forEach(function(c){
-      var av=c.nm.slice(0,1);
+      var av=(c.name||'?').slice(0,1);
       var d=document.createElement('div');
       d.className='cmt'+(c.role==='author'?' author':'');
-      d.innerHTML='<div class="av">'+av+'</div><div class="bd">'+
-        '<div class="nm">'+c.nm+(c.role==='author'?'<span class="badge">著者</span>':'')+'</div>'+
-        '<div class="tx">'+c.tx+'</div><div class="meta">'+c.meta+'</div></div>';
+      d.innerHTML='<div class="av">'+esc(av)+'</div><div class="bd">'+
+        '<div class="nm">'+esc(c.name)+(c.role==='author'?'<span class="badge">著者</span>':'')+'</div>'+
+        '<div class="tx">'+esc(c.text)+'</div><div class="meta">'+esc(c.meta)+'</div></div>';
       body.appendChild(d);
     });
     scrim.classList.add('show'); sheet.classList.add('show');
