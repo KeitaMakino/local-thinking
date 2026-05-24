@@ -355,6 +355,38 @@
   /* outro line (e.g. プロローグ、おわり。) */
   .outro{font-size:13px;color:var(--ink-soft);}
 
+  /* ===== paywall card (replaces grow when not purchased) ===== */
+  .paywall{
+    margin-top:22px;background:#1c1916;color:#EDE7DA;
+    border-radius:16px;padding:24px 20px 22px;text-align:center;
+    box-shadow:0 8px 22px -14px rgba(0,0,0,.5);
+  }
+  .paywall .pw-lock{font-size:22px;margin-bottom:8px;}
+  .paywall .pw-title{font-size:16px;line-height:1.7;margin-bottom:10px;letter-spacing:.04em;color:#F2ECDF;}
+  .paywall .pw-body{font-size:12px;color:#A69C8A;line-height:1.85;margin-bottom:18px;}
+  .paywall .pw-price{font-size:11px;color:#A69C8A;margin-bottom:14px;letter-spacing:.05em;}
+  .paywall .pw-price b{font-family:"Jost",sans-serif;font-size:20px;color:#F2ECDF;font-weight:600;margin-right:8px;}
+  .paywall button{
+    width:100%;border:none;background:var(--accent);color:#fff;font-size:14px;
+    padding:14px;border-radius:11px;cursor:pointer;transition:.15s;font-family:inherit;letter-spacing:.04em;
+  }
+  .paywall button:active{transform:scale(.98);background:var(--accent-deep);}
+
+  /* locked section placeholder (paid skeleton, not purchased) */
+  .sec-pending.locked{background:#F1ECE0;border-color:#D6CDB9;}
+  .sec-pending.locked .pt{color:var(--accent-deep);}
+
+  /* TOC lock state */
+  .toc-row.locked .toc-state{color:var(--accent-deep);}
+
+  /* TOC demo toggle (purchase state simulator) */
+  .toc-demo{
+    flex:none;border:none;border-top:1px dashed var(--paper-edge);background:none;
+    padding:14px;font-size:11px;color:var(--ink-soft);cursor:pointer;
+    font-family:inherit;letter-spacing:.04em;text-align:center;
+  }
+  .toc-demo:before{content:"⚙ ";opacity:.6;}
+
   @media (max-width:560px){
     .phone{width:100vw;height:100dvh;box-shadow:none;}
   }
@@ -479,6 +511,7 @@
           <span class="toc-state">›</span>
         </button>
       </div>
+      <button class="toc-demo" id="demoToggle" type="button">デモ：購入状態を切替（現在：未購入）</button>
     </div>
 
     <div class="scrim" id="scrim"></div>
@@ -502,6 +535,18 @@
   "use strict";
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+
+  /* ===== access / paywall state ===== */
+  var PURCHASED_KEY = 'lt_purchased';
+  function isPaid(ch){ return ch && ch.id !== 'prologue'; }
+  function isPurchased(){ try{ return localStorage.getItem(PURCHASED_KEY) === '1'; }catch(e){ return false; } }
+  function setPurchased(v){
+    try{
+      if(v) localStorage.setItem(PURCHASED_KEY,'1');
+      else  localStorage.removeItem(PURCHASED_KEY);
+    }catch(e){}
+  }
+  function isLocked(ch){ return isPaid(ch) && !isPurchased(); }
 
   /* ===== data loader =====
      stage 1: book.json (manifest) + comments.json
@@ -584,6 +629,8 @@
          + '</div>';
   }
   function renderGrow(b){
+    /* paywall hijack: 未購入なら、grow の代わりに paywall を出す */
+    if(!isPurchased()) return renderPaywall();
     var body = Array.isArray(b.body) ? brLines(b.body) : esc(b.body||'');
     var html = '<div class="grow">'
              + '<div class="gt mincho">'+esc(b.title)+'</div>'
@@ -595,6 +642,15 @@
     }
     html += '</div>';
     return html;
+  }
+  function renderPaywall(){
+    return '<div class="paywall">'
+         + '<div class="pw-lock">🔒</div>'
+         + '<div class="pw-title mincho">続きは、コミュニティで。</div>'
+         + '<div class="pw-body">第1〜6章＋エピローグの本文は、<br>購入とコミュニティ参加で読めます。</div>'
+         + '<div class="pw-price"><b>¥1,000</b>買い切り＋コミュニティ参加</div>'
+         + '<button id="pwbtn" type="button">続きを読む →</button>'
+         + '</div>';
   }
   function renderOutro(b){
     return '<div class="outro mincho">'+esc(b.text)+'</div>';
@@ -638,6 +694,7 @@
               +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
               +   '</div>'
               + '</div></section>';
+        var chLocked = isLocked(ch);
         ch.sections.forEach(function(s, sidx){
           var last = sidx === ch.sections.length-1;
           html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
@@ -645,7 +702,10 @@
                 +   '<div class="sec-no">'+esc(s.no)+'</div>'
                 +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
                 +   (s.sub?'<div class="sec-sub mincho">'+esc(s.sub)+'</div>':'')
-                +   '<div class="sec-pending"><div class="pt mincho">本文は鋭意執筆中です</div><div class="pd">公開時には、ここに著者の体験と思考が綴られます。</div></div>'
+                +   '<div class="sec-pending'+(chLocked?' locked':'')+'">'
+                +     '<div class="pt mincho">'+(chLocked?'🔒 本文ロック中':'本文は鋭意執筆中です')+'</div>'
+                +     '<div class="pd">'+(chLocked?'続きを読むには、購入＋コミュニティ参加が必要です。':'公開時には、ここに著者の体験と思考が綴られます。')+'</div>'
+                +   '</div>'
                 +   (last?'<div class="ch-end"><div class="et mincho">— '+esc(ch.title)+'、章末（予定）</div><div class="ed">次の章へ進むと、骨組みが続きます。</div></div>':'')
                 + '</div></section>';
         });
@@ -777,7 +837,7 @@
   /* pointer swipe */
   var startX=0,startY=0,dragging=false,decided=false,horiz=false,w=1;
   viewport.addEventListener('pointerdown',function(e){
-    if(e.target.closest('.marker,.o2o,.switch')) return;
+    if(e.target.closest('.marker,.o2o,.switch,.paywall')) return;
     dragging=true; decided=false; horiz=false;
     startX=e.clientX; startY=e.clientY; w=viewport.clientWidth||1;
     strip.classList.remove('anim');
@@ -818,13 +878,7 @@
     toast(solo?'ひとり読みモード：書き込みを隠しました':'みんな読みモード：読者の熱が見えます');
   });
 
-  /* heatmap */
-  document.querySelectorAll('.hl').forEach(function(h){
-    h.addEventListener('click',function(){
-      if(document.body.classList.contains('solo')) return;
-      toast(h.dataset.heat+'人が、この一文に線を引きました');
-    });
-  });
+  /* heatmap & marker click handlers: see attachStripDelegate() below */
 
   /* comments (data loaded at top from data/comments.json) */
   function openSheet(id){
@@ -844,22 +898,75 @@
   }
   function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
   scrim.addEventListener('click',closeSheet);
-  document.querySelectorAll('.marker').forEach(function(m){
-    m.addEventListener('click',function(e){ e.stopPropagation(); openSheet(m.dataset.cmt); });
-  });
   el('fakeinput').addEventListener('click',function(){ toast('（プロトタイプ）コメント投稿は本実装で対応します'); });
   el('sendbtn').addEventListener('click',function(){ toast('（プロトタイプ）コメント投稿は本実装で対応します'); });
 
-  /* O2O */
-  el('o2obtn').addEventListener('click',function(){ toast('（プロトタイプ）イベント参加ページへ遷移します'); });
-
-  /* notify */
-  var notify=el('notify');
-  notify.addEventListener('click',function(){
-    notify.classList.toggle('on');
-    toast(notify.classList.contains('on')?'通知をオンにしました。次の章でお会いしましょう':'通知をオフにしました');
+  /* ===== strip delegated click handler =====
+     marker / hl / o2obtn / pwbtn / notify はすべて strip 内の動的要素なので
+     親に1つだけリスナを付けて委譲する。rebuild() で strip を作り直しても
+     ハンドラはそのまま残るので付け直し不要。
+  */
+  strip.addEventListener('click',function(e){
+    var marker = e.target.closest('.marker');
+    if(marker){ e.stopPropagation(); openSheet(marker.dataset.cmt); return; }
+    var hl = e.target.closest('.hl');
+    if(hl){
+      if(document.body.classList.contains('solo')) return;
+      toast(hl.dataset.heat+'人が、この一文に線を引きました');
+      return;
+    }
+    if(e.target.id==='o2obtn'){
+      toast('（プロトタイプ）イベント参加ページへ遷移します'); return;
+    }
+    if(e.target.id==='pwbtn'){
+      toast('（プロトタイプ）購入＋コミュニティ参加フローへ遷移します'); return;
+    }
+    var sw = e.target.closest('.switch');
+    if(sw && sw.id==='notify'){
+      sw.classList.toggle('on');
+      toast(sw.classList.contains('on')?'通知をオンにしました。次の章でお会いしましょう':'通知をオフにしました');
+      return;
+    }
   });
 
+  /* ===== TOC ロックアイコン更新＆デモ用 購入状態トグル ===== */
+  function updateTOCLocks(){
+    var purchased = isPurchased();
+    document.querySelectorAll('.toc-row[data-jump]').forEach(function(row){
+      var id = row.dataset.jump;
+      var stateEl = row.querySelector('.toc-state');
+      if(!stateEl) return;
+      // strip any existing lock prefix first
+      stateEl.innerHTML = stateEl.innerHTML.replace(/^🔒\s*/, '');
+      row.classList.remove('locked');
+      if(id==='__cover' || id==='prologue') return;
+      if(!purchased){
+        row.classList.add('locked');
+        stateEl.innerHTML = '🔒 ' + stateEl.innerHTML;
+      }
+    });
+    var btn = el('demoToggle');
+    if(btn) btn.textContent = 'デモ：購入状態を切替（現在：' + (purchased?'購入済み':'未購入') + '）';
+  }
+
+  /* ===== rebuild: strip内容＋TOCロック＋ページインデックス再生成 ===== */
+  function rebuild(){
+    buildAllChapters();
+    indexPages();
+    updateTOCLocks();
+    if(idx >= TOTAL) idx = TOTAL - 1;
+    render();
+  }
+
+  /* デモ用トグル：購入状態を localStorage で切替 */
+  var demoBtn = el('demoToggle');
+  if(demoBtn) demoBtn.addEventListener('click',function(){
+    setPurchased(!isPurchased());
+    rebuild();
+    toast(isPurchased()?'デモ：購入済み状態に切替えました':'デモ：未購入状態に切替えました');
+  });
+
+  updateTOCLocks();
   render();
 })();
 </script>
