@@ -433,7 +433,7 @@
       <div class="toc-body">
         <button class="toc-row current" data-jump="prologue">
           <span class="toc-no">序</span>
-          <span class="toc-tx"><b>プロローグ</b><i>南房総のある朝、私は東京を見直した</i></span>
+          <span class="toc-tx"><b>はじまり</b><i>降りた先に、ローカルシンキング</i></span>
           <span class="toc-state">読む ›</span>
         </button>
         <button class="toc-row" data-jump="ch1">
@@ -672,10 +672,9 @@
     for(var i=0;i<BOOK.length;i++){ if(BOOK[i].id===cid) return BOOK[i]; }
     return BOOK[0];
   }
+  function isNumberedChapter(ch){ return ch.id !== 'prologue' && ch.id !== 'epilogue'; }
   function chapterPrefix(ch){
-    if(ch.id==='prologue') return 'プロローグ';
-    if(ch.id==='epilogue') return 'エピローグ';
-    return '第'+ch.no+'章';
+    return isNumberedChapter(ch) ? '第'+ch.no+'章' : ch.title;
   }
   function bookmarkLabel(globalIdx){
     var ch=chapterOf(globalIdx);
@@ -718,10 +717,8 @@
     var pInCh=idx - r.start;
     prog.style.width=(pInCh/Math.max(1,(r.len-1))*100)+'%';
     pgnum.textContent='P.'+(pInCh+1)+'　／　'+r.len;
-    /* appbar title */
-    var sub = ch.id==='prologue' ? 'LOCAL THINKING'
-            : ch.id==='epilogue' ? '南房総で、待っています'
-            : ch.title;
+    /* appbar title — for numbered chapters, sub = chapter title; otherwise sub = subtitle */
+    var sub = isNumberedChapter(ch) ? ch.title : (ch.subtitle || 'LOCAL THINKING');
     titleEl.innerHTML = esc(chapterPrefix(ch)) + '<small>'+esc(sub)+'</small>';
     /* TOC current row */
     toc.querySelectorAll('.toc-row').forEach(function(row){

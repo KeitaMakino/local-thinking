@@ -1,5 +1,5 @@
 [
-  { "id": "prologue", "no": "序", "kicker": "PROLOGUE",     "title": "プロローグ",                                   "subtitle": "南房総のある朝、私は東京を見直した",                  "status": "ready" },
+  { "id": "prologue", "no": "序", "kicker": "OPENING",      "title": "はじまり",                                     "subtitle": "降りた先に、ローカルシンキング",                      "status": "ready" },
   { "id": "ch1",      "no": "1", "kicker": "CHAPTER ONE",   "title": "ローカルって、こんなに面白い",                 "subtitle": "降りた先にあるものの、概要",                          "status": "skeleton" },
   { "id": "ch2",      "no": "2", "kicker": "CHAPTER TWO",   "title": "東京は何が壊れているのか",                     "subtitle": "ローカルから見えた、グローバル資本主義の症状と構造", "status": "skeleton" },
   { "id": "ch3",      "no": "3", "kicker": "CHAPTER THREE", "title": "2年半で見えてきた「ローカル思考」というOS",    "subtitle": "本書の中核",                                          "status": "skeleton" },
