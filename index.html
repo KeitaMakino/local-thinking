@@ -879,22 +879,38 @@
   nextBtn.addEventListener('click',function(){ go(idx+1); });
 
   /* pointer swipe */
-  var startX=0,startY=0,startT=0,dragging=false,decided=false,horiz=false,w=1;
+  var startX=0,startY=0,startT=0,dragging=false,decided=false,horiz=false,selecting=false,w=1;
   viewport.addEventListener('pointerdown',function(e){
     if(e.target.closest('.marker,.o2o,.switch,.paywall')) return;
-    dragging=true; decided=false; horiz=false;
+    dragging=true; decided=false; horiz=false; selecting=false;
     startX=e.clientX; startY=e.clientY; w=viewport.clientWidth||1;
     startT=performance.now();
     strip.classList.remove('anim');
   });
+  /* 文字選択が始まったらスワイプ中止（長押し選択や、PCでのドラッグ選択を尊重） */
+  viewport.addEventListener('selectstart',function(){
+    if(dragging){
+      selecting=true;
+      strip.classList.add('anim');
+      render();
+    }
+  });
   window.addEventListener('pointermove',function(e){
-    if(!dragging) return;
+    if(!dragging || selecting) return;
     var dx=e.clientX-startX, dy=e.clientY-startY;
     if(!decided){
       if(Math.abs(dx)>6||Math.abs(dy)>6){ decided=true; horiz=Math.abs(dx)>Math.abs(dy); }
       else return;
     }
     if(!horiz) return;
+    /* 保険：既に選択範囲ができていればスワイプ中止 */
+    var sel = window.getSelection && window.getSelection();
+    if(sel && sel.toString().length > 0){
+      selecting=true;
+      strip.classList.add('anim');
+      render();
+      return;
+    }
     e.preventDefault();
     var off=dx;
     if((idx===0&&dx>0)||(idx===TOTAL-1&&dx<0)) off=dx*0.32;
@@ -903,6 +919,7 @@
   window.addEventListener('pointerup',function(e){
     if(!dragging) return;
     dragging=false;
+    if(selecting){ selecting=false; return; }
     if(!horiz) return;
     var dx=e.clientX-startX;
     var dt=Math.max(1, performance.now()-startT);
