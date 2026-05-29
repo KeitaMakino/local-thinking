@@ -392,6 +392,26 @@
   }
   .toc-demo:before{content:"⚙ ";opacity:.6;}
 
+  /* ===== inline TOC preview page (プロローグ末 → ペイウォールの間に挟む) ===== */
+  .tp{display:flex;flex-direction:column;}
+  .tp-intro{font-size:13px;color:var(--ink-soft);letter-spacing:.04em;line-height:1.95;
+    margin-bottom:20px;text-align:center;}
+  .tp-list{display:flex;flex-direction:column;}
+  .tp-row{display:flex;align-items:center;gap:12px;padding:13px 4px;
+    border-bottom:1px solid var(--paper-edge);}
+  .tp-row:first-of-type{border-top:1px solid var(--paper-edge);}
+  .tp-no{font-family:"Jost",sans-serif;font-size:12px;color:var(--ink-soft);
+    width:24px;flex:none;text-align:center;}
+  .tp-tx{flex:1;min-width:0;}
+  .tp-tx b{display:block;font-weight:400;font-size:12.5px;color:var(--ink);line-height:1.45;}
+  .tp-tx i{display:block;font-style:normal;font-size:9.5px;color:var(--ink-soft);
+    margin-top:3px;line-height:1.5;}
+  .tp-state{font-size:9.5px;letter-spacing:.06em;color:var(--ink-soft);flex:none;}
+  .tp-row.locked{opacity:.55;}
+  .tp-row.locked .tp-state{color:var(--accent-deep);}
+  .tp-outro{font-size:11.5px;color:var(--ink-soft);text-align:center;
+    letter-spacing:.04em;line-height:1.85;margin-top:18px;}
+
   @media (max-width:560px){
     .phone{width:100vw;height:100dvh;box-shadow:none;}
   }
@@ -661,14 +681,32 @@
   function renderOutro(b){
     return '<div class="outro mincho">'+esc(b.text)+'</div>';
   }
+  function renderTocPreview(b){
+    var purchased = isPurchased();
+    var rows = BOOK.map(function(ch){
+      var isProl = ch.id === 'prologue';
+      var locked = !isProl && !purchased;
+      return '<div class="tp-row'+(locked?' locked':'')+'">'
+           + '<span class="tp-no">'+esc(ch.no)+'</span>'
+           + '<span class="tp-tx"><b>'+esc(ch.title)+'</b><i>'+esc(ch.subtitle||'')+'</i></span>'
+           + '<span class="tp-state">'+(isProl?'読了 ✓':(locked?'🔒':'読む'))+'</span>'
+           + '</div>';
+    }).join('');
+    return '<div class="tp">'
+         + (b.intro?'<div class="tp-intro mincho">'+esc(b.intro)+'</div>':'')
+         + '<div class="tp-list">'+rows+'</div>'
+         + (b.outro?'<div class="tp-outro mincho">'+esc(b.outro)+'</div>':'')
+         + '</div>';
+  }
   function renderBlock(b){
     switch(b && b.type){
-      case 'title':    return renderTitle(b);
-      case 'prose':    return renderProse(b);
-      case 'authnote': return renderAuthnote(b);
-      case 'o2o':      return renderO2O(b);
-      case 'grow':     return renderGrow(b);
-      case 'outro':    return renderOutro(b);
+      case 'title':       return renderTitle(b);
+      case 'prose':       return renderProse(b);
+      case 'authnote':    return renderAuthnote(b);
+      case 'o2o':         return renderO2O(b);
+      case 'grow':        return renderGrow(b);
+      case 'outro':       return renderOutro(b);
+      case 'toc-preview': return renderTocPreview(b);
       default: return '';
     }
   }
@@ -841,18 +879,19 @@
   nextBtn.addEventListener('click',function(){ go(idx+1); });
 
   /* pointer swipe */
-  var startX=0,startY=0,dragging=false,decided=false,horiz=false,w=1;
+  var startX=0,startY=0,startT=0,dragging=false,decided=false,horiz=false,w=1;
   viewport.addEventListener('pointerdown',function(e){
     if(e.target.closest('.marker,.o2o,.switch,.paywall')) return;
     dragging=true; decided=false; horiz=false;
     startX=e.clientX; startY=e.clientY; w=viewport.clientWidth||1;
+    startT=performance.now();
     strip.classList.remove('anim');
   });
   window.addEventListener('pointermove',function(e){
     if(!dragging) return;
     var dx=e.clientX-startX, dy=e.clientY-startY;
     if(!decided){
-      if(Math.abs(dx)>8||Math.abs(dy)>8){ decided=true; horiz=Math.abs(dx)>Math.abs(dy); }
+      if(Math.abs(dx)>6||Math.abs(dy)>6){ decided=true; horiz=Math.abs(dx)>Math.abs(dy); }
       else return;
     }
     if(!horiz) return;
@@ -865,10 +904,14 @@
     if(!dragging) return;
     dragging=false;
     if(!horiz) return;
-    var dx=e.clientX-startX, th=w*0.16;
+    var dx=e.clientX-startX;
+    var dt=Math.max(1, performance.now()-startT);
+    var vx=dx/dt;           // 速度 (px/ms)
+    var th=w*0.10;          // 距離しきい値（旧 0.16 → 0.10 で軽く）
+    var vth=0.28;           // 速度しきい値（フリック判定）
     strip.classList.add('anim');
-    if(dx<=-th) go(idx+1);
-    else if(dx>=th) go(idx-1);
+    if(dx<=-th || vx<=-vth) go(idx+1);
+    else if(dx>=th || vx>=vth) go(idx-1);
     else render();
   });
   viewport.addEventListener('dragstart',function(e){ e.preventDefault(); });
