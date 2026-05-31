@@ -1,10 +1,10 @@
 [
-  { "id": "prologue", "no": "序", "kicker": "OPENING",      "title": "はじまり",                                     "subtitle": "降りた先に、ローカルシンキング",                      "status": "ready" },
-  { "id": "ch1",      "no": "1", "kicker": "CHAPTER ONE",   "title": "ローカルって、こんなに面白い",                 "subtitle": "降りた先にあるものの、概要",                          "status": "skeleton" },
-  { "id": "ch2",      "no": "2", "kicker": "CHAPTER TWO",   "title": "東京は何が壊れているのか",                     "subtitle": "ローカルから見えた、グローバル資本主義の症状と構造", "status": "skeleton" },
-  { "id": "ch3",      "no": "3", "kicker": "CHAPTER THREE", "title": "2年半で見えてきた「ローカル思考」というOS",    "subtitle": "本書の中核",                                          "status": "skeleton" },
-  { "id": "ch4",      "no": "4", "kicker": "CHAPTER FOUR",  "title": "私がローカルで取り戻したもの",                 "subtitle": "個人の生き方が楽になる",                              "status": "skeleton" },
-  { "id": "ch5",      "no": "5", "kicker": "CHAPTER FIVE",  "title": "社会のもう一つの可能性",                       "subtitle": "私が南房総で見ている風景",                            "status": "skeleton" },
-  { "id": "ch6",      "no": "6", "kicker": "CHAPTER SIX",   "title": "自分の生き方を、ちゃんと選ぶ",                 "subtitle": "個と社会への手渡し",                                  "status": "skeleton" },
-  { "id": "epilogue", "no": "結", "kicker": "EPILOGUE",     "title": "エピローグ",                                   "subtitle": "南房総で、待っています",                              "status": "skeleton" }
+  { "id": "prologue", "no": "序", "kicker": "OPENING", "title": "はじまり", "subtitle": "降りた先に、ローカルシンキング", "status": "ready" },
+  { "id": "ch1", "no": "1", "kicker": "CHAPTER ONE", "title": "ローカルでみた可能性", "subtitle": "降りた先でみたおもしろさ", "status": "skeleton" },
+  { "id": "ch2", "no": "2", "kicker": "CHAPTER TWO", "title": "資本至上主義の限界", "subtitle": "ローカルから見える東京都市の違和感", "status": "skeleton" },
+  { "id": "ch3", "no": "3", "kicker": "CHAPTER THREE", "title": "ローカルシンキングとは何か？", "subtitle": "６つのポイントから導く地域思考", "status": "skeleton" },
+  { "id": "ch4", "no": "4", "kicker": "CHAPTER FOUR", "title": "ローカルシンキングがなぜ人を生きやすくするのか", "subtitle": "個人の生き方が楽になる", "status": "skeleton" },
+  { "id": "ch5", "no": "5", "kicker": "CHAPTER FIVE", "title": "ローカルシンキングが社会を救う", "subtitle": "地域の課題と都市の課題を解決する", "status": "skeleton" },
+  { "id": "ch6", "no": "6", "kicker": "CHAPTER SIX", "title": "ローカルシンキング", "subtitle": "個と社会への手渡し", "status": "skeleton" },
+  { "id": "epilogue", "no": "結", "kicker": "EPILOGUE", "title": "エピローグ", "subtitle": "南房総で、待っています", "status": "skeleton" }
 ]
