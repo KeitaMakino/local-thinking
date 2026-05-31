@@ -489,53 +489,7 @@
         <span class="toc-ttl">目次</span>
         <button class="toc-x" id="tocclose" aria-label="閉じる">×</button>
       </div>
-      <div class="toc-body">
-        <button class="toc-row current" data-jump="prologue">
-          <span class="toc-no">序</span>
-          <span class="toc-tx"><b>はじまり</b><i>降りた先に、ローカルシンキング</i></span>
-          <span class="toc-state">読む ›</span>
-        </button>
-        <button class="toc-row" data-jump="ch1">
-          <span class="toc-no">1</span>
-          <span class="toc-tx"><b>ローカルって、こんなに面白い</b><i>降りた先にあるものの、概要</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="ch2">
-          <span class="toc-no">2</span>
-          <span class="toc-tx"><b>東京は何が壊れているのか</b><i>グローバル資本主義の症状と構造</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="ch3">
-          <span class="toc-no">3</span>
-          <span class="toc-tx"><b>「ローカル思考」というOS</b><i>2年半で見えてきたもの</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="ch4">
-          <span class="toc-no">4</span>
-          <span class="toc-tx"><b>私がローカルで取り戻したもの</b><i>個人の生き方が楽になる</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="ch5">
-          <span class="toc-no">5</span>
-          <span class="toc-tx"><b>社会のもう一つの可能性</b><i>私が南房総で見ている風景</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="ch6">
-          <span class="toc-no">6</span>
-          <span class="toc-tx"><b>自分の生き方を、ちゃんと選ぶ</b><i>個と社会への手渡し</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="epilogue">
-          <span class="toc-no">結</span>
-          <span class="toc-tx"><b>エピローグ</b><i>南房総で、待っています</i></span>
-          <span class="toc-state">骨組み ›</span>
-        </button>
-        <button class="toc-row" data-jump="__cover">
-          <span class="toc-no">⌂</span>
-          <span class="toc-tx"><b>表紙にもどる</b><i>推薦の帯・しおり</i></span>
-          <span class="toc-state">›</span>
-        </button>
-      </div>
+      <div class="toc-body" id="toc-body"><!-- 章リストは book.json から動的レンダリング --></div>
       <button class="toc-demo" id="demoToggle" type="button">デモ：購入状態を切替（現在：未購入）</button>
     </div>
 
@@ -757,7 +711,28 @@
     }
     strip.innerHTML = html;
   }
+  function renderToc(){
+    var body = el('toc-body');
+    if(!body) return;
+    var rows = '';
+    for(var i=0; i<BOOK.length; i++){
+      var ch = BOOK[i];
+      var state = (ch.id === 'prologue') ? '読む ›' : '骨組み ›';
+      rows += '<button class="toc-row" data-jump="' + esc(ch.id) + '">'
+           +   '<span class="toc-no">' + esc(ch.no) + '</span>'
+           +   '<span class="toc-tx"><b>' + esc(ch.title) + '</b><i>' + esc(ch.subtitle || '') + '</i></span>'
+           +   '<span class="toc-state">' + state + '</span>'
+           + '</button>';
+    }
+    rows += '<button class="toc-row" data-jump="__cover">'
+         +   '<span class="toc-no">⌂</span>'
+         +   '<span class="toc-tx"><b>表紙にもどる</b><i>推薦の帯・しおり</i></span>'
+         +   '<span class="toc-state">›</span>'
+         + '</button>';
+    body.innerHTML = rows;
+  }
   buildAllChapters();
+  renderToc();
 
   /* ===== page index ===== */
   var pageMap=[], chapterRanges={}, TOTAL=0;
@@ -853,15 +828,16 @@
   el('tocbtn').addEventListener('click',openToc);
   el('cvmenu').addEventListener('click',function(e){ e.stopPropagation(); openToc(); });
   el('tocclose').addEventListener('click',closeToc);
-  toc.querySelectorAll('[data-jump]').forEach(function(row){
-    row.addEventListener('click',function(){
-      var dest=row.dataset.jump;
-      closeToc();
-      if(dest==='__cover'){ showCover(); return; }
-      if(document.body.classList.contains('cover')) openBook();
-      var r=chapterRanges[dest];
-      if(r) go(r.start);
-    });
+  /* TOCは動的レンダリングなので、行への click は委譲で受ける */
+  toc.addEventListener('click',function(e){
+    var row = e.target.closest('[data-jump]');
+    if(!row) return;
+    var dest = row.dataset.jump;
+    closeToc();
+    if(dest==='__cover'){ showCover(); return; }
+    if(document.body.classList.contains('cover')) openBook();
+    var r = chapterRanges[dest];
+    if(r) go(r.start);
   });
 
   /* keyboard */
