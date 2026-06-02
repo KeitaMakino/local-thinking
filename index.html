@@ -482,6 +482,32 @@
     border-radius:10px 0 0 10px;
   }
 
+  /* ===== 縦書き時の TOC プレビューページ（章ごとに「タイトル＋項目を / 区切り」で縦組み） ===== */
+  .tp-vert{
+    writing-mode:vertical-rl;text-orientation:mixed;
+    display:flex;flex-direction:column;gap:30px;
+    height:100%;align-items:flex-start;
+    padding:8px 4px;
+    font-family:"Jost","Zen Maru Gothic","Hiragino Sans",sans-serif;
+  }
+  .tpv-head{
+    font-size:15px;color:var(--ink);letter-spacing:.22em;
+    line-height:1.8;
+  }
+  .tpv-ch{
+    display:block;line-height:1.95;letter-spacing:.04em;
+  }
+  .tpv-ch-title{
+    font-size:14px;color:var(--accent-deep);
+    text-decoration:underline;text-underline-offset:5px;
+    text-decoration-thickness:1.2px;
+    cursor:pointer;
+  }
+  .tpv-ch-title:active{opacity:.55;}
+  .tpv-ch-secs{
+    font-size:11px;color:var(--ink-soft);letter-spacing:.02em;
+  }
+
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
     flex:none;border:none;border-top:1px solid var(--paper-edge);background:none;
@@ -717,6 +743,31 @@
     return '<div class="outro mincho">'+esc(b.text)+'</div>';
   }
   function renderTocPreview(b){
+    /* 縦書きモードは「章タイトル（リンク）＋ 項目を/区切り」の縦組みレイアウト */
+    if(document.body.classList.contains('vert')){
+      var headText = (b && b.intro) ? b.intro : '目次';
+      var blocks = BOOK.map(function(ch){
+        var secText = '';
+        if(ch.sections && ch.sections.length){
+          secText = ch.sections.map(function(s){ return (s.head || ''); })
+                               .filter(function(t){ return t; })
+                               .join(' / ');
+        } else if(ch.subtitle){
+          secText = ch.subtitle;
+        }
+        return '<div class="tpv-ch">'
+             +   '<a class="tpv-ch-title mincho" data-jump="'+esc(ch.id)+'">'
+             +     esc(ch.no)+'　'+esc(ch.title)
+             +   '</a>'
+             +   (secText ? '<br><span class="tpv-ch-secs mincho">'+esc(secText)+'</span>' : '')
+             + '</div>';
+      }).join('');
+      return '<div class="tp tp-vert">'
+           + '<div class="tpv-head mincho">'+esc(headText)+'</div>'
+           + blocks
+           + '</div>';
+    }
+    /* 横書きモード：従来通りのカード一覧 */
     var purchased = isPurchased();
     var rows = BOOK.map(function(ch){
       var isProl = ch.id === 'prologue';
@@ -1066,6 +1117,16 @@
   strip.addEventListener('click',function(e){
     var marker = e.target.closest('.marker');
     if(marker){ e.stopPropagation(); openSheet(marker.dataset.cmt); return; }
+    /* 縦書きTOCプレビュー内のチャプタータイトル（リンク）クリックでその章へジャンプ */
+    var jump = e.target.closest('[data-jump]');
+    if(jump){
+      e.stopPropagation();
+      var dest = jump.dataset.jump;
+      if(document.body.classList.contains('cover')) openBook();
+      var r = chapterRanges[dest];
+      if(r) go(r.start);
+      return;
+    }
     var hl = e.target.closest('.hl');
     if(hl){
       if(document.body.classList.contains('solo')) return;
@@ -1141,8 +1202,11 @@
     var pv = el('prev'), nx = el('next');
     if(pv) pv.textContent = vert ? '›' : '‹';
     if(nx) nx.textContent = vert ? '‹' : '›';
-    /* 縦/横でstripの並び方とtransform式が変わるので、render()で再計算 */
-    if(typeof render === 'function'){
+    /* 縦/横で strip の並び方や toc-preview の出し方が変わるので、rebuild() で全部やり直す */
+    if(typeof rebuild === 'function'){
+      strip.classList.remove('anim');
+      rebuild();
+    } else if(typeof render === 'function'){
       strip.classList.remove('anim');
       render();
     }
