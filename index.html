@@ -982,11 +982,32 @@
 
   /* ===== cover open / close ===== */
   function openBook(){ cover.classList.add('dismissed'); document.body.classList.remove('cover'); }
-  function showCover(){ cover.classList.remove('dismissed'); document.body.classList.add('cover'); cover.scrollTop=0; }
+  function showCover(){ cover.classList.remove('dismissed'); document.body.classList.add('cover'); cover.scrollTop=0; updateCoverParallax(); }
   el('cventer').addEventListener('click',function(e){ e.stopPropagation();
     var obi=cover.querySelector('.cv-obi'); if(obi) obi.scrollIntoView({behavior:'smooth'}); });
   el('obienter').addEventListener('click',function(e){ e.stopPropagation(); openBook(); });
   el('cvmark').addEventListener('click',function(e){ e.stopPropagation(); go(savedIdx); openBook(); });
+
+  /* ===== 表紙パララックス：スクロールでロゴが山に隠れていく演出 =====
+     LOGO を下方向に translateY して、visually スクロールから取り残させる。
+     相対的に山（cv-fg）の中に飲み込まれていくように見える。 */
+  var cvLogoMain = cover.querySelector('.cv-logomain');
+  var parallaxTicking = false;
+  function updateCoverParallax(){
+    if(!cvLogoMain) return;
+    var st = cover.scrollTop;
+    /* 0.5 = LOGOが「スクロール量の50%分だけ動かないでいる」係数。
+       0=他と一緒に動く、1.0=完全静止＝最も飲み込まれる感 */
+    cvLogoMain.style.transform = 'translate(-50%, ' + (st * 0.5) + 'px)';
+  }
+  cover.addEventListener('scroll', function(){
+    if(parallaxTicking) return;
+    parallaxTicking = true;
+    requestAnimationFrame(function(){
+      updateCoverParallax();
+      parallaxTicking = false;
+    });
+  });
 
   /* ===== table of contents ===== */
   function openToc(){ toc.classList.add('show'); }
