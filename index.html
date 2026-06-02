@@ -1100,6 +1100,17 @@
       else return;
     }
     if(!horiz) return;
+    /* TOCプレビューページの中なら、ページ送りではなくページ内の横スクロールに転用 */
+    if(startTarget && startTarget.closest && startTarget.closest('.tp-vert')){
+      e.preventDefault();
+      var _tp = startTarget.closest('.tp-vert');
+      var _pg = _tp ? _tp.closest('.page') : null;
+      if(_pg){
+        /* 指を右にドラッグ（dx>0）= 左方向（縦書きの「次」方向）を見たい = scrollLeftを減らす */
+        _pg.scrollLeft = startScrollLeft - dx;
+      }
+      return;
+    }
     e.preventDefault();
     var off=dx;
     /* 縦書きは「次=右ドラッグ／前=左ドラッグ」なので、端での過剰スワイプ判定も反転 */
