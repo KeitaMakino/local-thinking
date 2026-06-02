@@ -1081,6 +1081,9 @@
   /* pointer swipe */
   var startX=0,startY=0,startT=0,dragging=false,decided=false,horiz=false,selecting=false,w=1;
   var startTarget=null, startScrollLeft=0;
+  /* TOCを最後までスクロールし切ったあと、さらに同方向に指を動かすと
+     ページ送りに繋げるための「はみ出し量」。pointermove中に更新し、pointerupで判定 */
+  var tocOvershoot=0;
   viewport.addEventListener('pointerdown',function(e){
     if(e.target.closest('.marker,.o2o,.switch,.paywall')) return;
     dragging=true; decided=false; horiz=false; selecting=false;
@@ -1089,6 +1092,7 @@
     startTarget = e.target;
     /* TOCプレビューページの中で押し始めたら、ページ内の横スクロール位置を覚えておく */
     startScrollLeft = 0;
+    tocOvershoot = 0;
     var _tp = e.target.closest && e.target.closest('.tp-vert');
     if(_tp){
       var _pg = _tp.closest('.page');
@@ -1112,14 +1116,31 @@
       else return;
     }
     if(!horiz) return;
-    /* TOCプレビューページの中なら、ページ送りではなくページ内の横スクロールに転用 */
+    /* TOCプレビューページの中なら、ページ送りではなくページ内の横スクロールに転用。
+       ただしスクロールが端に達して「はみ出した」ぶんは、ページ送りのプレビューに昇格させる。 */
     if(startTarget && startTarget.closest && startTarget.closest('.tp-vert')){
       e.preventDefault();
       var _tp = startTarget.closest('.tp-vert');
       var _pg = _tp ? _tp.closest('.page') : null;
       if(_pg){
-        /* 指を右にドラッグ（dx>0）= 左方向（縦書きの「次」方向）を見たい = scrollLeftを減らす */
-        _pg.scrollLeft = startScrollLeft - dx;
+        var maxScroll = _pg.scrollWidth - _pg.clientWidth;
+        var desired = startScrollLeft - dx; /* dx>0で左方向（次）を見にいく */
+        if(desired < 0){
+          /* 左端に到達した。残りのdxは「次ページへの引っ張り」として使う */
+          _pg.scrollLeft = 0;
+          tocOvershoot = -desired; /* 正の値（次方向への過剰スワイプ量） */
+          strip.style.transform='translateX('+(stripBase(idx) + tocOvershoot/w*100)+'%)';
+        } else if(desired > maxScroll){
+          /* 右端に到達した。残りのdxは「前ページへの引っ張り」として使う */
+          _pg.scrollLeft = maxScroll;
+          tocOvershoot = -(desired - maxScroll); /* 負の値（前方向） */
+          strip.style.transform='translateX('+(stripBase(idx) + tocOvershoot/w*100)+'%)';
+        } else {
+          _pg.scrollLeft = desired;
+          tocOvershoot = 0;
+          /* stripはニュートラル位置に戻す */
+          strip.style.transform='translateX('+stripBase(idx)+'%)';
+        }
       }
       return;
     }
@@ -1142,8 +1163,22 @@
       return;
     }
     if(!horiz) return;
-    /* TOCプレビュー内のスワイプはページ送りに昇格しない（横スクロールで完結） */
+    /* TOCプレビュー内のスワイプは原則ページ送りに昇格しないが、
+       端まで読み切ってさらに引っ張った「はみ出し」が十分大きければ次/前ページに送る。 */
     if(startTarget && startTarget.closest && startTarget.closest('.tp-vert')){
+      var _th = w*0.10;
+      if(tocOvershoot >= _th){
+        strip.classList.add('anim');
+        go(idx+1);
+      } else if(tocOvershoot <= -_th){
+        strip.classList.add('anim');
+        go(idx-1);
+      } else if(tocOvershoot !== 0){
+        /* しきい値未満のはみ出しはスナップで戻す */
+        strip.classList.add('anim');
+        render();
+      }
+      tocOvershoot = 0;
       return;
     }
     var dx=e.clientX-startX;
@@ -1166,6 +1201,7 @@
     if(!dragging) return;
     dragging=false;
     selecting=false;
+    tocOvershoot=0;
     if(horiz){
       strip.classList.add('anim');
       render();
