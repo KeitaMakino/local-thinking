@@ -826,6 +826,9 @@
     var html = '';
     for(var i=0; i<BOOK.length; i++){
       var ch = BOOK[i];
+      /* 未購入の場合は、prologue（ペイウォールを含む）までしか strip に出さない。
+         以降の章はアクセス不可。購入状態が変わるとrebuild()で再描画される。 */
+      if(isLocked(ch)) continue;
       if(ch.pages && ch.pages.length){
         ch.pages.forEach(function(page){
           html += '<section class="page" data-chapter="'+esc(ch.id)+'">';
