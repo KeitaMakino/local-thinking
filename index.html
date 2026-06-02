@@ -512,6 +512,10 @@
     height:100%;align-items:flex-start;
     padding:8px 4px;
     font-family:"Jost","Zen Maru Gothic","Hiragino Sans",sans-serif;
+    /* 重要：自分自身を中身ピッタリの幅にして、親の .page に「溢れている」を伝える。
+       これで .page.scrollLeft が動かせる＝中で横スクロールできる */
+    align-self:flex-start;
+    width:max-content;max-width:none;
   }
   .tpv-head{
     font-size:14px;color:var(--ink);letter-spacing:.18em;
