@@ -272,7 +272,7 @@
   .toc-ttl{font-size:15px;letter-spacing:.16em;color:var(--ink);}
   .toc-x{background:none;border:none;font-size:26px;line-height:1;color:var(--ink-soft);
     cursor:pointer;width:40px;height:40px;}
-  .toc-body{flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;}
+  .toc-body{flex:1 1 0;height:0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
   .toc-row{
     width:100%;display:flex;align-items:center;gap:14px;padding:15px 22px;
     background:none;border:none;border-bottom:1px solid var(--paper-edge);
@@ -858,7 +858,12 @@
         ch.sections.forEach(function(s, sidx){
           var last = sidx === ch.sections.length-1;
           if(s.pages && s.pages.length){
-            /* セクション本文あり：プロローグと同じく prose ページを書き出す */
+            /* セクション本文あり：①項目扉（sec-no + sec-head の中央寄せ） ②本文ページ群 */
+            html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
+                  + '<div class="sec-page">'
+                  +   '<div class="sec-no">'+esc(s.no)+'</div>'
+                  +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
+                  + '</div></section>';
             s.pages.forEach(function(page){
               html += '<section class="page" data-chapter="'+esc(ch.id)+'">';
               (page.blocks||[]).forEach(function(b){ html += renderBlock(b); });
