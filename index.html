@@ -61,7 +61,10 @@
   .modetog button.active{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.16);}
 
   /* ===== viewport / pages ===== */
-  .viewport{flex:1;position:relative;overflow:hidden;touch-action:pan-y;}
+  /* touch-action: manipulation = 縦横どちらのpanもブラウザネイティブを許可。
+     ページ送り（JSスワイプ）が必要な場面はJS側で扱う。
+     スクロール可能なページ（縦書きTOCプレビュー等）の横スクロールがこれで効く */
+  .viewport{flex:1;position:relative;overflow:hidden;touch-action:manipulation;}
   .strip{display:flex;height:100%;will-change:transform;}
   .strip.anim{transition:transform .42s cubic-bezier(.32,.72,.26,1);}
   .page{
@@ -1066,6 +1069,10 @@
   var startX=0,startY=0,startT=0,dragging=false,decided=false,horiz=false,selecting=false,w=1;
   viewport.addEventListener('pointerdown',function(e){
     if(e.target.closest('.marker,.o2o,.switch,.paywall')) return;
+    /* 縦書きTOCプレビューページは横スクロールで全章を見る形なので、
+       ページ送りスワイプを無効化してネイティブの横スクロールに任せる。
+       次/前ページへの移動は下部ナビボタンで。 */
+    if(e.target.closest('.tp-vert')) return;
     dragging=true; decided=false; horiz=false; selecting=false;
     startX=e.clientX; startY=e.clientY; w=viewport.clientWidth||1;
     startT=performance.now();
