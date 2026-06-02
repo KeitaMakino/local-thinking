@@ -442,8 +442,11 @@
   }
   /* 縦書き時のタイトルページは縦・横どちらにも中央寄せ */
   body.vert .page:has(.page-vignette){align-items:center;}
-  /* stripやbotbarの並びは横書きと同じ。スワイプは「左=次」を両モード共通に揃える方が、
-     縦書きの読書フロー（右→左へ目線を流す→次ページへ左に進む）と一致して自然 */
+  /* 縦書きは紙の本に合わせて「右スワイプ=次ページ」「ページは右→左へ進む」。
+     stripを row-reverse で並べることで、デフォルトでP0が右端に置かれる */
+  body.vert .strip{flex-direction:row-reverse;}
+  /* 進捗メーターも右から左に伸びるよう RTL に */
+  body.vert .progline{direction:rtl;}
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
@@ -836,7 +839,11 @@
 
   /* ===== render ===== */
   function stripBase(i){
-    return -i * 100;
+    /* 縦書きは strip を row-reverse で並べているため、P0 が右端。
+       次ページ（左にある）に進むには translateX を「正方向」に動かす */
+    return document.body.classList.contains('vert')
+      ? i * 100
+      : -i * 100;
   }
   function render(){
     strip.style.transform='translateX('+ stripBase(idx) +'%)';
@@ -895,11 +902,12 @@
       if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); openBook(); }
       return;
     }
-    /* 縦書きはキーボード矢印を読書フローに揃える（←で次／→で戻る）。横書きはその逆。 */
+    /* 縦書きは「→（右）で次／←（左）で戻る」（紙の縦書き本の右→左の進行に合わせる）。
+       横書きはその逆（=従来通り） */
     var vert = document.body.classList.contains('vert');
     if(e.key===' '){ e.preventDefault(); go(idx+1); }
-    else if(e.key==='ArrowRight'){ e.preventDefault(); go(vert ? idx-1 : idx+1); }
-    else if(e.key==='ArrowLeft'){  e.preventDefault(); go(vert ? idx+1 : idx-1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); go(vert ? idx+1 : idx+1); }
+    else if(e.key==='ArrowLeft'){  e.preventDefault(); go(vert ? idx-1 : idx-1); }
   });
   prevBtn.addEventListener('click',function(){ go(idx-1); });
   nextBtn.addEventListener('click',function(){ go(idx+1); });
@@ -931,7 +939,11 @@
     if(!horiz) return;
     e.preventDefault();
     var off=dx;
-    if((idx===0&&dx>0)||(idx===TOTAL-1&&dx<0)) off=dx*0.32;
+    /* 縦書きは「次=右ドラッグ／前=左ドラッグ」なので、端での過剰スワイプ判定も反転 */
+    var vert = document.body.classList.contains('vert');
+    var overStart = vert ? (dx<0) : (dx>0);
+    var overEnd   = vert ? (dx>0) : (dx<0);
+    if((idx===0 && overStart) || (idx===TOTAL-1 && overEnd)) off=dx*0.32;
     strip.style.transform='translateX('+(stripBase(idx) + off/w*100)+'%)';
   },{passive:false});
   window.addEventListener('pointerup',function(e){
@@ -950,8 +962,12 @@
     var th=w*0.10;          // 距離しきい値（旧 0.16 → 0.10 で軽く）
     var vth=0.28;           // 速度しきい値（フリック判定）
     strip.classList.add('anim');
-    if(dx<=-th || vx<=-vth) go(idx+1);
-    else if(dx>=th || vx>=vth) go(idx-1);
+    /* 縦書きは「右スワイプ=次」なので符号を反転 */
+    var vert = document.body.classList.contains('vert');
+    var nextSwipe = vert ? (dx>=th || vx>=vth) : (dx<=-th || vx<=-vth);
+    var prevSwipe = vert ? (dx<=-th || vx<=-vth) : (dx>=th || vx>=vth);
+    if(nextSwipe) go(idx+1);
+    else if(prevSwipe) go(idx-1);
     else render();
   });
   /* iOSなどで OS がスワイプを途中で奪う（pointercancel）と、stripがmid-dragで止まる。
