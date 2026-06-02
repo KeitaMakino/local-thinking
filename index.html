@@ -330,13 +330,15 @@
   .toast.show{opacity:1;transform:translate(-50%,0);}
 
   /* ===== chapter title page ===== */
-  .ch-cover{display:flex;flex-direction:column;justify-content:center;height:100%;}
+  .ch-cover{display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;text-align:center;}
   .ch-no{font-family:"Jost",sans-serif;font-size:10.5px;letter-spacing:.34em;color:var(--accent-deep);font-weight:700;margin-bottom:22px;}
   .ch-title{font-size:24px;line-height:1.7;color:var(--ink);margin-bottom:10px;letter-spacing:.04em;}
   .ch-sub{font-size:13px;color:var(--ink-soft);margin-bottom:30px;letter-spacing:.06em;line-height:1.7;}
-  .ch-onlyhere{border-left:3px solid var(--sea);background:rgba(63,107,121,.07);padding:13px 15px 14px;border-radius:0 10px 10px 0;font-size:12.5px;line-height:1.95;color:#445;margin-bottom:22px;}
+  /* ===== chapter intro page (ONLY HERE + meta, separate from cover) ===== */
+  .ch-intro{display:flex;flex-direction:column;justify-content:center;height:100%;gap:24px;}
+  .ch-onlyhere{border-left:3px solid var(--sea);background:rgba(63,107,121,.07);padding:13px 15px 14px;border-radius:0 10px 10px 0;font-size:12.5px;line-height:1.95;color:#445;}
   .ch-onlyhere .oh{font-family:"Jost",sans-serif;font-size:9.5px;letter-spacing:.28em;color:var(--sea);margin-bottom:6px;font-weight:600;}
-  .ch-meta{display:flex;gap:14px;font-size:10.5px;letter-spacing:.08em;color:var(--ink-soft);}
+  .ch-meta{display:flex;gap:14px;font-size:10.5px;letter-spacing:.08em;color:var(--ink-soft);justify-content:center;}
   .ch-meta b{font-family:"Jost",sans-serif;color:var(--ink);font-weight:600;margin-right:3px;}
 
   /* ===== section skeleton page ===== */
@@ -466,6 +468,14 @@
   body.vert .sec-sub{
     writing-mode:vertical-rl;text-orientation:mixed;
   }
+  /* 縦書きの章カバー：KICKERを上部固定／TITLE+SUBは画面中央／SUBはTITLEの左隣（=下）にぶら下げる */
+  body.vert .ch-cover{position:relative;}
+  body.vert .ch-no{
+    position:absolute;top:30px;left:0;right:0;
+    text-align:center;margin:0;
+  }
+  body.vert .ch-title{margin:0;font-size:clamp(18px,4.2vh,24px);}
+  body.vert .ch-sub{margin:0;font-size:clamp(11px,2.4vh,13px);}
   /* ONLY HERE の左ボーダーを右に（読書方向に合わせる） */
   body.vert .ch-onlyhere{
     border-left:none;border-right:3px solid var(--sea);
@@ -752,17 +762,24 @@
           html += '</section>';
         });
       } else if(ch.sections){
+        /* Page A: 章カバー（KICKER + TITLE + SUB のみ。中央寄せのヒーロー）*/
         html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
               + '<div class="ch-cover">'
               +   '<div class="ch-no">'+esc(ch.kicker)+'</div>'
               +   '<div class="ch-title mincho">'+esc(ch.title)+'</div>'
               +   (ch.subtitle?'<div class="ch-sub mincho">'+esc(ch.subtitle)+'</div>':'')
-              +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">ONLY HERE</div>'+esc(ch.onlyHere)+'</div>':'')
-              +   '<div class="ch-meta">'
-              +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
-              +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
-              +   '</div>'
               + '</div></section>';
+        /* Page B（任意）：章紹介 ONLY HERE と項目/字数メタ */
+        if(ch.onlyHere || (ch.volume && (ch.volume.items || ch.volume.chars))){
+          html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
+                + '<div class="ch-intro">'
+                +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">ONLY HERE</div>'+esc(ch.onlyHere)+'</div>':'')
+                +   '<div class="ch-meta">'
+                +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
+                +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
+                +   '</div>'
+                + '</div></section>';
+        }
         var chLocked = isLocked(ch);
         ch.sections.forEach(function(s, sidx){
           var last = sidx === ch.sections.length-1;
