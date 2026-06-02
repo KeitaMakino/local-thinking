@@ -426,9 +426,14 @@
     line-height:1.55;font-size:clamp(16px,3.6vh,20px);
   }
   body.vert .page-vignette{
-    display:flex;flex-direction:column;align-items:center;gap:18px;
+    display:flex;flex-direction:column;align-items:center;gap:0;
   }
-  body.vert .kicker{margin-bottom:0;text-align:center;}
+  /* 縦書き時、KICKER は流れから外して画面上部に固定。これで ptitle が完全に画面中央に来る */
+  body.vert .page:has(.page-vignette){position:relative;}
+  body.vert .kicker{
+    position:absolute;top:30px;left:0;right:0;
+    text-align:center;margin:0;
+  }
   body.vert .outro{
     writing-mode:vertical-rl;text-orientation:mixed;font-size:13px;
   }
@@ -447,6 +452,8 @@
   body.vert .strip{flex-direction:row-reverse;}
   /* 進捗メーターも右から左に伸びるよう RTL に */
   body.vert .progline{direction:rtl;}
+  /* 下部ナビも左右反転。視覚的に左にあるボタン（中身はnext要素）が「次へ」になる */
+  body.vert .botbar{flex-direction:row-reverse;}
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
@@ -902,12 +909,12 @@
       if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); openBook(); }
       return;
     }
-    /* 縦書きは「→（右）で次／←（左）で戻る」（紙の縦書き本の右→左の進行に合わせる）。
-       横書きはその逆（=従来通り） */
+    /* 縦書きでは「←で次／→で戻る」（縦書き本での「次は左」の方向感覚）。
+       横書きはその逆（→で次／←で戻る）。スペースは両モード共通で次へ。 */
     var vert = document.body.classList.contains('vert');
     if(e.key===' '){ e.preventDefault(); go(idx+1); }
-    else if(e.key==='ArrowRight'){ e.preventDefault(); go(vert ? idx+1 : idx+1); }
-    else if(e.key==='ArrowLeft'){  e.preventDefault(); go(vert ? idx-1 : idx-1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); go(vert ? idx-1 : idx+1); }
+    else if(e.key==='ArrowLeft'){  e.preventDefault(); go(vert ? idx+1 : idx-1); }
   });
   prevBtn.addEventListener('click',function(){ go(idx-1); });
   nextBtn.addEventListener('click',function(){ go(idx+1); });
@@ -1096,10 +1103,10 @@
     /* 縦書きは「次=左方向」なので、obiボタンの矢印は左に置く */
     var obi = el('obienter');
     if(obi) obi.textContent = vert ? '←　本文を読みはじめる' : '本文を読みはじめる　→';
-    /* 下部ナビ（prev/next）は両モード共通：‹ で前、› で次 */
+    /* 縦書きでは下部ナビの位置と矢印を反転して、視覚的な左ボタン=次・右ボタン=前 に */
     var pv = el('prev'), nx = el('next');
-    if(pv) pv.textContent = '‹';
-    if(nx) nx.textContent = '›';
+    if(pv) pv.textContent = vert ? '›' : '‹';
+    if(nx) nx.textContent = vert ? '‹' : '›';
     /* 縦/横でstripの並び方とtransform式が変わるので、render()で再計算 */
     if(typeof render === 'function'){
       strip.classList.remove('anim');
