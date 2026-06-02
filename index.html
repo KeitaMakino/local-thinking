@@ -423,8 +423,12 @@
   body.vert .prose p+p{margin-top:0;margin-right:1.1em;}
   body.vert .ptitle{
     writing-mode:vertical-rl;text-orientation:mixed;
-    line-height:1.5;font-size:clamp(20px,5.5vh,30px);
+    line-height:1.55;font-size:clamp(16px,3.6vh,20px);
   }
+  body.vert .page-vignette{
+    display:flex;flex-direction:column;align-items:center;gap:18px;
+  }
+  body.vert .kicker{margin-bottom:0;text-align:center;}
   body.vert .outro{
     writing-mode:vertical-rl;text-orientation:mixed;font-size:13px;
   }
@@ -436,12 +440,10 @@
     overflow-x:auto;overflow-y:hidden;
     justify-content:flex-start;
   }
-  /* 縦書き時は、ページの並び方向を逆にして「右→次ページは左から出てくる」を実現 */
-  body.vert .strip{flex-direction:row-reverse;}
   /* 縦書き時のタイトルページは縦・横どちらにも中央寄せ */
   body.vert .page:has(.page-vignette){align-items:center;}
-  /* 縦書きは「次ページ=左方向」が自然。下部ナビバーも左右反転してボタン位置を入れ替える */
-  body.vert .botbar{flex-direction:row-reverse;}
+  /* stripやbotbarの並びは横書きと同じ。スワイプは「左=次」を両モード共通に揃える方が、
+     縦書きの読書フロー（右→左へ目線を流す→次ページへ左に進む）と一致して自然 */
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
@@ -834,11 +836,7 @@
 
   /* ===== render ===== */
   function stripBase(i){
-    /* 縦書きはstripを row-reverse で並べているため、デフォルトでP0が右端に配置される。
-       次ページ（左にある）に進むには translateX を「正方向（右へ）」に動かす。 */
-    return document.body.classList.contains('vert')
-      ? i * 100
-      : -i * 100;
+    return -i * 100;
   }
   function render(){
     strip.style.transform='translateX('+ stripBase(idx) +'%)';
@@ -897,8 +895,11 @@
       if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); openBook(); }
       return;
     }
-    if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); go(idx+1); }
-    if(e.key==='ArrowLeft'){ e.preventDefault(); go(idx-1); }
+    /* 縦書きはキーボード矢印を読書フローに揃える（←で次／→で戻る）。横書きはその逆。 */
+    var vert = document.body.classList.contains('vert');
+    if(e.key===' '){ e.preventDefault(); go(idx+1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); go(vert ? idx-1 : idx+1); }
+    else if(e.key==='ArrowLeft'){  e.preventDefault(); go(vert ? idx+1 : idx-1); }
   });
   prevBtn.addEventListener('click',function(){ go(idx-1); });
   nextBtn.addEventListener('click',function(){ go(idx+1); });
@@ -930,11 +931,7 @@
     if(!horiz) return;
     e.preventDefault();
     var off=dx;
-    var vert = document.body.classList.contains('vert');
-    /* 縦書き時は「次=右ドラッグ／前=左ドラッグ」、端での過剰スワイプ判定も反転 */
-    var overStart = vert ? (dx<0) : (dx>0);
-    var overEnd   = vert ? (dx>0) : (dx<0);
-    if((idx===0 && overStart) || (idx===TOTAL-1 && overEnd)) off=dx*0.32;
+    if((idx===0&&dx>0)||(idx===TOTAL-1&&dx<0)) off=dx*0.32;
     strip.style.transform='translateX('+(stripBase(idx) + off/w*100)+'%)';
   },{passive:false});
   window.addEventListener('pointerup',function(e){
@@ -953,12 +950,8 @@
     var th=w*0.10;          // 距離しきい値（旧 0.16 → 0.10 で軽く）
     var vth=0.28;           // 速度しきい値（フリック判定）
     strip.classList.add('anim');
-    /* 縦書き時は「次=右ドラッグ／前=左ドラッグ」、判定の符号を反転 */
-    var vert = document.body.classList.contains('vert');
-    var nextSwipe = vert ? (dx>=th || vx>=vth) : (dx<=-th || vx<=-vth);
-    var prevSwipe = vert ? (dx<=-th || vx<=-vth) : (dx>=th || vx>=vth);
-    if(nextSwipe) go(idx+1);
-    else if(prevSwipe) go(idx-1);
+    if(dx<=-th || vx<=-vth) go(idx+1);
+    else if(dx>=th || vx>=vth) go(idx-1);
     else render();
   });
   /* iOSなどで OS がスワイプを途中で奪う（pointercancel）と、stripがmid-dragで止まる。
@@ -1084,12 +1077,13 @@
     document.body.classList.toggle('vert', vert);
     var btn = el('writingToggle');
     if(btn) btn.textContent = '縦書き ⇄ 横書き（現在：' + (vert ? '縦書き' : '横書き') + '）';
-    /* 縦書きでは「次」が左方向（読む方向）なので、各種矢印の向きを反転 */
+    /* 縦書きは「次=左方向」なので、obiボタンの矢印は左に置く */
     var obi = el('obienter');
-    if(obi) obi.textContent = '本文を読みはじめる ' + (vert ? '←' : '→');
+    if(obi) obi.textContent = vert ? '←　本文を読みはじめる' : '本文を読みはじめる　→';
+    /* 下部ナビ（prev/next）は両モード共通：‹ で前、› で次 */
     var pv = el('prev'), nx = el('next');
-    if(pv) pv.textContent = vert ? '›' : '‹';
-    if(nx) nx.textContent = vert ? '‹' : '›';
+    if(pv) pv.textContent = '‹';
+    if(nx) nx.textContent = '›';
     /* 縦/横でstripの並び方とtransform式が変わるので、render()で再計算 */
     if(typeof render === 'function'){
       strip.classList.remove('anim');
