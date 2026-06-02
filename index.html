@@ -435,6 +435,10 @@
     overflow-x:auto;overflow-y:hidden;
     justify-content:flex-start;
   }
+  /* 縦書き時は、ページの並び方向を逆にして「右→次ページは左から出てくる」を実現 */
+  body.vert .strip{flex-direction:row-reverse;}
+  /* 縦書き時のタイトルページは縦・横どちらにも中央寄せ */
+  body.vert .page:has(.page-vignette){align-items:center;}
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
@@ -823,8 +827,14 @@
   }catch(e){}
 
   /* ===== render ===== */
+  function stripBase(i){
+    /* 縦書きはstripを row-reverse で並べているため、transform式を反転 */
+    return document.body.classList.contains('vert')
+      ? -(TOTAL - 1 - i) * 100
+      : -i * 100;
+  }
   function render(){
-    strip.style.transform='translateX('+(-idx*100)+'%)';
+    strip.style.transform='translateX('+ stripBase(idx) +'%)';
     var ch=chapterOf(idx);
     var r=chapterRanges[ch.id];
     var pInCh=idx - r.start;
@@ -913,8 +923,12 @@
     if(!horiz) return;
     e.preventDefault();
     var off=dx;
-    if((idx===0&&dx>0)||(idx===TOTAL-1&&dx<0)) off=dx*0.32;
-    strip.style.transform='translateX('+(-idx*100+(off/w*100))+'%)';
+    var vert = document.body.classList.contains('vert');
+    /* 縦書き時は「次=右ドラッグ／前=左ドラッグ」、端での過剰スワイプ判定も反転 */
+    var overStart = vert ? (dx<0) : (dx>0);
+    var overEnd   = vert ? (dx>0) : (dx<0);
+    if((idx===0 && overStart) || (idx===TOTAL-1 && overEnd)) off=dx*0.32;
+    strip.style.transform='translateX('+(stripBase(idx) + off/w*100)+'%)';
   },{passive:false});
   window.addEventListener('pointerup',function(e){
     if(!dragging) return;
@@ -932,8 +946,12 @@
     var th=w*0.10;          // 距離しきい値（旧 0.16 → 0.10 で軽く）
     var vth=0.28;           // 速度しきい値（フリック判定）
     strip.classList.add('anim');
-    if(dx<=-th || vx<=-vth) go(idx+1);
-    else if(dx>=th || vx>=vth) go(idx-1);
+    /* 縦書き時は「次=右ドラッグ／前=左ドラッグ」、判定の符号を反転 */
+    var vert = document.body.classList.contains('vert');
+    var nextSwipe = vert ? (dx>=th || vx>=vth) : (dx<=-th || vx<=-vth);
+    var prevSwipe = vert ? (dx<=-th || vx<=-vth) : (dx>=th || vx>=vth);
+    if(nextSwipe) go(idx+1);
+    else if(prevSwipe) go(idx-1);
     else render();
   });
   /* iOSなどで OS がスワイプを途中で奪う（pointercancel）と、stripがmid-dragで止まる。
@@ -1058,6 +1076,11 @@
     document.body.classList.toggle('vert', mode === 'vert');
     var btn = el('writingToggle');
     if(btn) btn.textContent = '縦書き ⇄ 横書き（現在：' + (mode === 'vert' ? '縦書き' : '横書き') + '）';
+    /* 縦/横でstripの並び方とtransform式が変わるので、render()で再計算 */
+    if(typeof render === 'function'){
+      strip.classList.remove('anim');
+      render();
+    }
   }
   applyWritingMode();
   var writingBtn = el('writingToggle');
