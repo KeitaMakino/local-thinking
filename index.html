@@ -505,7 +505,7 @@
     border-radius:10px 0 0 10px;
   }
 
-  /* ===== 縦書き時の TOC プレビューページ（章タイトルのみの縦組み一覧） ===== */
+  /* ===== 縦書き時の TOC プレビューページ（章タイトル+項目 / 区切り） ===== */
   .tp-vert{
     writing-mode:vertical-rl;text-orientation:mixed;
     display:flex;flex-direction:column;gap:14px;
@@ -521,12 +521,15 @@
     display:block;line-height:1.85;letter-spacing:.04em;
   }
   .tpv-ch-title{
-    font-size:14px;color:var(--accent-deep);
-    text-decoration:underline;text-underline-offset:5px;
+    font-size:13px;color:var(--accent-deep);
+    text-decoration:underline;text-underline-offset:4px;
     text-decoration-thickness:1.2px;
     cursor:pointer;
   }
   .tpv-ch-title:active{opacity:.55;}
+  .tpv-ch-secs{
+    font-size:10px;color:var(--ink-soft);letter-spacing:.02em;line-height:1.7;
+  }
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
@@ -763,16 +766,24 @@
     return '<div class="outro mincho">'+esc(b.text)+'</div>';
   }
   function renderTocPreview(b){
-    /* 縦書きモードは章タイトル（リンク）だけの縦組みレイアウト
-       1ビューポートに全章収まるように、項目リストは出さない。
-       項目は章カバー／章紹介ページで見られる。 */
+    /* 縦書きモード：章タイトル(リンク) + 項目を/区切りで小さく表示。
+       全章がビューポートに収まらない場合は、JSでスワイプ→横スクロールに転用。 */
     if(document.body.classList.contains('vert')){
       var headText = (b && b.intro) ? b.intro : '目次';
       var blocks = BOOK.map(function(ch){
+        var secText = '';
+        if(ch.sections && ch.sections.length){
+          secText = ch.sections.map(function(s){ return s.head || ''; })
+                               .filter(function(t){ return t; })
+                               .join(' / ');
+        } else if(ch.subtitle){
+          secText = ch.subtitle;
+        }
         return '<div class="tpv-ch">'
              +   '<a class="tpv-ch-title mincho" data-jump="'+esc(ch.id)+'">'
              +     esc(ch.no)+'　'+esc(ch.title)
              +   '</a>'
+             +   (secText ? '<br><span class="tpv-ch-secs mincho">'+esc(secText)+'</span>' : '')
              + '</div>';
       }).join('');
       return '<div class="tp tp-vert">'
@@ -1057,11 +1068,20 @@
 
   /* pointer swipe */
   var startX=0,startY=0,startT=0,dragging=false,decided=false,horiz=false,selecting=false,w=1;
+  var startTarget=null, startScrollLeft=0;
   viewport.addEventListener('pointerdown',function(e){
     if(e.target.closest('.marker,.o2o,.switch,.paywall')) return;
     dragging=true; decided=false; horiz=false; selecting=false;
     startX=e.clientX; startY=e.clientY; w=viewport.clientWidth||1;
     startT=performance.now();
+    startTarget = e.target;
+    /* TOCプレビューページの中で押し始めたら、ページ内の横スクロール位置を覚えておく */
+    startScrollLeft = 0;
+    var _tp = e.target.closest && e.target.closest('.tp-vert');
+    if(_tp){
+      var _pg = _tp.closest('.page');
+      if(_pg) startScrollLeft = _pg.scrollLeft;
+    }
     strip.classList.remove('anim');
   });
   /* 文字選択が始まったらスワイプ中止（長押し選択や、PCでのドラッグ選択を尊重） */
@@ -1099,6 +1119,10 @@
       return;
     }
     if(!horiz) return;
+    /* TOCプレビュー内のスワイプはページ送りに昇格しない（横スクロールで完結） */
+    if(startTarget && startTarget.closest && startTarget.closest('.tp-vert')){
+      return;
+    }
     var dx=e.clientX-startX;
     var dt=Math.max(1, performance.now()-startT);
     var vx=dx/dt;           // 速度 (px/ms)
