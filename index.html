@@ -457,6 +457,21 @@
   /* 下部ナビも左右反転。視覚的に左にあるボタン（中身はnext要素）が「次へ」になる */
   body.vert .botbar{flex-direction:row-reverse;}
 
+  /* 縦書き時、骨組み章（ch-cover / sec-page）も日本語縦組みに切り替え */
+  body.vert .ch-title,
+  body.vert .ch-sub,
+  body.vert .ch-onlyhere,
+  body.vert .ch-end .et,
+  body.vert .sec-head,
+  body.vert .sec-sub{
+    writing-mode:vertical-rl;text-orientation:mixed;
+  }
+  /* ONLY HERE の左ボーダーを右に（読書方向に合わせる） */
+  body.vert .ch-onlyhere{
+    border-left:none;border-right:3px solid var(--sea);
+    border-radius:10px 0 0 10px;
+  }
+
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
     flex:none;border:none;border-top:1px solid var(--paper-edge);background:none;
