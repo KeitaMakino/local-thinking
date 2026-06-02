@@ -38,7 +38,22 @@
     {
       "no": "2-7",
       "head": "グローバル化＋デジタル化が加速させたもの",
-      "sub": ""
+      "sub": "",
+      "pages": [
+        {
+          "blocks": [
+            {
+              "type": "prose",
+              "paragraphs": [
+                {
+                  "text": "SNSによる崩壊もある。",
+                  "lead": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
     },
     {
       "no": "2-8",
