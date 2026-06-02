@@ -828,9 +828,10 @@
 
   /* ===== render ===== */
   function stripBase(i){
-    /* 縦書きはstripを row-reverse で並べているため、transform式を反転 */
+    /* 縦書きはstripを row-reverse で並べているため、デフォルトでP0が右端に配置される。
+       次ページ（左にある）に進むには translateX を「正方向（右へ）」に動かす。 */
     return document.body.classList.contains('vert')
-      ? -(TOTAL - 1 - i) * 100
+      ? i * 100
       : -i * 100;
   }
   function render(){
@@ -1073,9 +1074,16 @@
   }
   function applyWritingMode(){
     var mode = getWritingMode();
-    document.body.classList.toggle('vert', mode === 'vert');
+    var vert = mode === 'vert';
+    document.body.classList.toggle('vert', vert);
     var btn = el('writingToggle');
-    if(btn) btn.textContent = '縦書き ⇄ 横書き（現在：' + (mode === 'vert' ? '縦書き' : '横書き') + '）';
+    if(btn) btn.textContent = '縦書き ⇄ 横書き（現在：' + (vert ? '縦書き' : '横書き') + '）';
+    /* 縦書きでは「次」が左方向（読む方向）なので、各種矢印の向きを反転 */
+    var obi = el('obienter');
+    if(obi) obi.textContent = '本文を読みはじめる ' + (vert ? '←' : '→');
+    var pv = el('prev'), nx = el('next');
+    if(pv) pv.textContent = vert ? '›' : '‹';
+    if(nx) nx.textContent = vert ? '‹' : '›';
     /* 縦/横でstripの並び方とtransform式が変わるので、render()で再計算 */
     if(typeof render === 'function'){
       strip.classList.remove('anim');
