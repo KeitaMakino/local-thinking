@@ -334,10 +334,11 @@
   .ch-no{font-family:"Jost",sans-serif;font-size:10.5px;letter-spacing:.34em;color:var(--accent-deep);font-weight:700;margin-bottom:22px;}
   .ch-title{font-size:24px;line-height:1.7;color:var(--ink);margin-bottom:10px;letter-spacing:.04em;}
   .ch-sub{font-size:13px;color:var(--ink-soft);margin-bottom:30px;letter-spacing:.06em;line-height:1.7;}
-  /* ===== chapter intro page (ONLY HERE + meta, separate from cover) ===== */
-  .ch-intro{display:flex;flex-direction:column;justify-content:center;height:100%;gap:24px;}
+  /* ===== chapter intro page (SUBTITLE + この章の概要 + meta) ===== */
+  .ch-intro{display:flex;flex-direction:column;justify-content:center;height:100%;gap:20px;}
+  .ch-intro-title{font-size:20px;color:var(--ink);line-height:1.7;letter-spacing:.04em;text-align:center;}
   .ch-onlyhere{border-left:3px solid var(--sea);background:rgba(63,107,121,.07);padding:13px 15px 14px;border-radius:0 10px 10px 0;font-size:12.5px;line-height:1.95;color:#445;}
-  .ch-onlyhere .oh{font-family:"Jost",sans-serif;font-size:9.5px;letter-spacing:.28em;color:var(--sea);margin-bottom:6px;font-weight:600;}
+  .ch-onlyhere .oh{font-family:"Jost",sans-serif;font-size:10px;letter-spacing:.16em;color:var(--sea);margin-bottom:6px;font-weight:600;}
   .ch-meta{display:flex;gap:14px;font-size:10.5px;letter-spacing:.08em;color:var(--ink-soft);justify-content:center;}
   .ch-meta b{font-family:"Jost",sans-serif;color:var(--ink);font-weight:600;margin-right:3px;}
 
@@ -358,27 +359,26 @@
   /* outro line (e.g. プロローグ、おわり。) */
   .outro{font-size:13px;color:var(--ink-soft);}
 
-  /* ===== paywall card (replaces grow when not purchased) ===== */
+  /* ===== paywall (ライト背景・ページ中央寄せ) ===== */
   .paywall{
-    margin-top:22px;background:#1c1916;color:#EDE7DA;
-    border-radius:16px;padding:24px 20px 22px;text-align:center;
-    box-shadow:0 8px 22px -14px rgba(0,0,0,.5);
+    margin:auto;max-width:320px;text-align:center;
+    color:var(--ink);padding:20px 16px;
   }
-  .paywall .pw-lock{font-size:22px;margin-bottom:8px;}
-  .paywall .pw-title{font-size:16px;line-height:1.7;margin-bottom:10px;letter-spacing:.04em;color:#F2ECDF;}
-  .paywall .pw-body{font-size:12px;color:#A69C8A;line-height:1.85;margin-bottom:18px;}
-  .paywall .pw-price{font-size:11px;color:#A69C8A;margin-bottom:14px;letter-spacing:.05em;}
-  .paywall .pw-price b{font-family:"Jost",sans-serif;font-size:20px;color:#F2ECDF;font-weight:600;margin-right:8px;}
+  .paywall .pw-lock{font-size:24px;margin-bottom:14px;}
+  .paywall .pw-title{font-size:17px;line-height:1.7;margin-bottom:12px;letter-spacing:.04em;color:var(--ink);}
+  .paywall .pw-body{font-size:12.5px;color:var(--ink-soft);line-height:1.85;margin-bottom:22px;}
+  .paywall .pw-price{font-size:11.5px;color:var(--ink-soft);margin-bottom:18px;letter-spacing:.05em;}
+  .paywall .pw-price b{font-family:"Jost",sans-serif;font-size:24px;color:var(--ink);font-weight:600;margin-right:8px;}
   .paywall button{
     width:100%;border:none;background:var(--accent);color:#fff;font-size:14px;
     padding:14px;border-radius:11px;cursor:pointer;transition:.15s;font-family:inherit;letter-spacing:.04em;
   }
   .paywall button:active{transform:scale(.98);background:var(--accent-deep);}
   .paywall .pw-bonus{
-    margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);
-    font-size:11px;color:#C9C0AE;letter-spacing:.04em;line-height:1.8;
+    margin-top:20px;padding-top:16px;border-top:1px solid var(--paper-edge);
+    font-size:11px;color:var(--ink-soft);letter-spacing:.04em;line-height:1.8;
   }
-  .paywall .pw-bonus span{color:#7A715E;font-size:10px;}
+  .paywall .pw-bonus span{color:#9C9180;font-size:10px;}
 
   /* locked section placeholder (paid skeleton, not purchased) */
   .sec-pending.locked{background:#F1ECE0;border-color:#D6CDB9;}
@@ -468,14 +468,34 @@
   body.vert .sec-sub{
     writing-mode:vertical-rl;text-orientation:mixed;
   }
-  /* 縦書きの章カバー：KICKERを上部固定／TITLE+SUBは画面中央／SUBはTITLEの左隣（=下）にぶら下げる */
+  /* 縦書きの章カバー：KICKERを上部固定、TITLEを画面ど真ん中に絶対配置 */
   body.vert .ch-cover{position:relative;}
   body.vert .ch-no{
     position:absolute;top:30px;left:0;right:0;
     text-align:center;margin:0;
   }
-  body.vert .ch-title{margin:0;font-size:clamp(18px,4.2vh,24px);}
-  body.vert .ch-sub{margin:0;font-size:clamp(11px,2.4vh,13px);}
+  body.vert .ch-title{
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);margin:0;
+    font-size:clamp(18px,4.2vh,24px);
+  }
+  /* 縦書きの章紹介ページ：SUBTITLE が縦組みタイトル */
+  body.vert .ch-intro-title{
+    writing-mode:vertical-rl;text-orientation:mixed;
+    font-size:clamp(15px,3.5vh,18px);
+    text-align:start;
+  }
+  body.vert .ch-intro{align-items:center;}
+  body.vert .ch-meta{writing-mode:horizontal-tb;}
+  /* 縦書きのセクション骨組みページ：sec-noを上部固定、見出しを中央に */
+  body.vert .sec-page{position:relative;align-items:center;}
+  body.vert .sec-no{
+    position:absolute;top:30px;left:0;right:0;
+    text-align:center;margin:0;
+  }
+  body.vert .sec-head{margin:0 0 8px 0;font-size:clamp(15px,3.5vh,19px);}
+  body.vert .sec-sub{margin:0;font-size:clamp(11px,2.4vh,13px);}
+  body.vert .sec-pending{margin-top:32px;max-width:280px;writing-mode:horizontal-tb;}
   /* ONLY HERE の左ボーダーを右に（読書方向に合わせる） */
   body.vert .ch-onlyhere{
     border-left:none;border-right:3px solid var(--sea);
@@ -813,18 +833,18 @@
           html += '</section>';
         });
       } else if(ch.sections){
-        /* Page A: 章カバー（KICKER + TITLE + SUB のみ。中央寄せのヒーロー）*/
+        /* Page A: 章カバー（KICKER + TITLE のみ。中央寄せのヒーロー）*/
         html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
               + '<div class="ch-cover">'
               +   '<div class="ch-no">'+esc(ch.kicker)+'</div>'
               +   '<div class="ch-title mincho">'+esc(ch.title)+'</div>'
-              +   (ch.subtitle?'<div class="ch-sub mincho">'+esc(ch.subtitle)+'</div>':'')
               + '</div></section>';
-        /* Page B（任意）：章紹介 ONLY HERE と項目/字数メタ */
-        if(ch.onlyHere || (ch.volume && (ch.volume.items || ch.volume.chars))){
+        /* Page B（任意）：章紹介（SUBTITLE をタイトル扱い＋この章の概要＋メタ）*/
+        if(ch.subtitle || ch.onlyHere || (ch.volume && (ch.volume.items || ch.volume.chars))){
           html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
                 + '<div class="ch-intro">'
-                +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">ONLY HERE</div>'+esc(ch.onlyHere)+'</div>':'')
+                +   (ch.subtitle?'<div class="ch-intro-title mincho">'+esc(ch.subtitle)+'</div>':'')
+                +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">この章の概要</div>'+esc(ch.onlyHere)+'</div>':'')
                 +   '<div class="ch-meta">'
                 +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
                 +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
