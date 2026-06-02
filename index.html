@@ -894,6 +894,14 @@
       }
     }
     strip.innerHTML = html;
+    /* TOCプレビューページがあれば、初期スクロールを最右端（=最初の章＝プロローグが見える位置）に。
+       これで左に向かってドラッグすると次々と章が現れる、自然な縦書きの読書フローになる */
+    requestAnimationFrame(function(){
+      document.querySelectorAll('.tp-vert').forEach(function(tp){
+        var pg = tp.closest('.page');
+        if(pg) pg.scrollLeft = pg.scrollWidth;
+      });
+    });
   }
   function renderToc(){
     var body = el('toc-body');
