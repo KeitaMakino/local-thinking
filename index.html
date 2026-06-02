@@ -1201,6 +1201,22 @@
     if(!dragging) return;
     dragging=false;
     selecting=false;
+    /* pointercancel は iOS Safari が横スワイプをネイティブスクロールに昇格させた時にも発火する。
+       その時点で tocOvershoot がしきい値を超えていれば、ページ遷移を実行する。 */
+    if(horiz && startTarget && startTarget.closest && startTarget.closest('.tp-vert')){
+      var _th = w*0.10;
+      if(tocOvershoot >= _th){
+        strip.classList.add('anim');
+        go(idx+1);
+        tocOvershoot=0;
+        return;
+      } else if(tocOvershoot <= -_th){
+        strip.classList.add('anim');
+        go(idx-1);
+        tocOvershoot=0;
+        return;
+      }
+    }
     tocOvershoot=0;
     if(horiz){
       strip.classList.add('anim');
