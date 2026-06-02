@@ -1,6 +1,6 @@
 [
   { "id": "prologue", "no": "序", "kicker": "OPENING", "title": "はじまり", "subtitle": "降りた先に、ローカルシンキング", "status": "ready" },
-  { "id": "ch1", "no": "1", "kicker": "CHAPTER ONE", "title": "ローカルでみた可能性", "subtitle": "降りた先に広がっていた思わぬ豊かさ", "status": "skeleton" },
+  { "id": "ch1", "no": "1", "kicker": "CHAPTER ONE", "title": "ローカルでみた可能性", "subtitle": "", "status": "skeleton" },
   { "id": "ch2", "no": "2", "kicker": "CHAPTER TWO", "title": "資本至上主義の限界", "subtitle": "ローカルから見える東京都市の違和感", "status": "skeleton" },
   { "id": "ch3", "no": "3", "kicker": "CHAPTER THREE", "title": "ローカルシンキングとは何か？", "subtitle": "６つのポイントから導く地域思考", "status": "skeleton" },
   { "id": "ch4", "no": "4", "kicker": "CHAPTER FOUR", "title": "ローカルシンキングがなぜ人を生きやすくするのか", "subtitle": "個人の生き方が楽になる", "status": "skeleton" },
