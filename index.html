@@ -425,14 +425,16 @@
     writing-mode:vertical-rl;text-orientation:mixed;
     line-height:1.55;font-size:clamp(16px,3.6vh,20px);
   }
-  body.vert .page-vignette{
-    display:flex;flex-direction:column;align-items:center;gap:0;
-  }
-  /* 縦書き時、KICKER は流れから外して画面上部に固定。これで ptitle が完全に画面中央に来る */
+  /* 縦書き時のタイトルページ：KICKERは上部固定、PTITLEは画面ど真ん中に絶対配置 */
   body.vert .page:has(.page-vignette){position:relative;}
+  body.vert .page-vignette{display:block;width:100%;height:100%;}
   body.vert .kicker{
     position:absolute;top:30px;left:0;right:0;
     text-align:center;margin:0;
+  }
+  body.vert .ptitle{
+    position:absolute;top:50%;left:50%;
+    transform:translate(-50%,-50%);margin:0;
   }
   body.vert .outro{
     writing-mode:vertical-rl;text-orientation:mixed;font-size:13px;
