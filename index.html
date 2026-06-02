@@ -81,6 +81,7 @@
   .prose{font-size:clamp(13px,3.5vw,14.5px);line-height:2.16;letter-spacing:.02em;color:var(--ink);}
   .prose p+p{margin-top:1.05em;}
   .prose .lead{margin-bottom:.2em;}
+  .prose .outro-line{font-size:.86em;color:var(--ink-soft);margin-top:1.7em;}
 
   /* heatmap highlight */
   .hl{border-radius:3px;padding:.06em .1em;cursor:pointer;transition:background-color .45s ease;background:var(--hl1);}
@@ -439,6 +440,8 @@
   body.vert .strip{flex-direction:row-reverse;}
   /* 縦書き時のタイトルページは縦・横どちらにも中央寄せ */
   body.vert .page:has(.page-vignette){align-items:center;}
+  /* 縦書きは「次ページ=左方向」が自然。下部ナビバーも左右反転してボタン位置を入れ替える */
+  body.vert .botbar{flex-direction:row-reverse;}
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
   .toc-setting{
@@ -612,7 +615,10 @@
     return esc(s.text);
   }
   function renderPara(p){
-    var cls = p.lead ? ' class="lead"' : '';
+    var c = '';
+    if(p.lead) c = 'lead';
+    else if(p.outro) c = 'outro-line';
+    var cls = c ? ' class="'+c+'"' : '';
     var inner = p.spans ? p.spans.map(renderSpan).join('') : esc(p.text);
     return '<p'+cls+'>'+inner+'</p>';
   }
