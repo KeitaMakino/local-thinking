@@ -2,9 +2,9 @@
   { "id": "prologue", "no": "序", "kicker": "OPENING", "title": "はじまり", "subtitle": "降りた先に、ローカルシンキング", "status": "ready" },
   { "id": "ch1", "no": "1", "kicker": "CHAPTER ONE", "title": "ローカルでみた可能性", "subtitle": "", "status": "skeleton" },
   { "id": "ch2", "no": "2", "kicker": "CHAPTER TWO", "title": "資本至上主義の限界", "subtitle": "", "status": "skeleton" },
-  { "id": "ch3", "no": "3", "kicker": "CHAPTER THREE", "title": "ローカルシンキングとは何か？", "subtitle": "６つのポイントから導く地域思考", "status": "skeleton" },
-  { "id": "ch4", "no": "4", "kicker": "CHAPTER FOUR", "title": "ローカルシンキングがなぜ人を生きやすくするのか", "subtitle": "個人の生き方が楽になる", "status": "skeleton" },
-  { "id": "ch5", "no": "5", "kicker": "CHAPTER FIVE", "title": "ローカルシンキングが社会を救う", "subtitle": "地域の課題と都市の課題を解決する", "status": "skeleton" },
-  { "id": "ch6", "no": "6", "kicker": "CHAPTER SIX", "title": "ローカルシンキングを実践する人たち", "subtitle": "対談形式でお届けします", "status": "skeleton" },
+  { "id": "ch3", "no": "3", "kicker": "CHAPTER THREE", "title": "ローカルシンキングとは何か？", "subtitle": "小さく、身丈で考える", "status": "skeleton" },
+  { "id": "ch4", "no": "4", "kicker": "CHAPTER FOUR", "title": "ローカルシンキングが人を救う", "subtitle": "", "status": "skeleton" },
+  { "id": "ch5", "no": "5", "kicker": "CHAPTER FIVE", "title": "ローカルシンキングの実践", "subtitle": "", "status": "skeleton" },
+  { "id": "ch6", "no": "6", "kicker": "CHAPTER SIX", "title": "ローカルシンキングな人たち", "subtitle": "", "status": "skeleton" },
   { "id": "epilogue", "no": "結", "kicker": "EPILOGUE", "title": "エピローグ", "subtitle": "南房総で、待っています", "status": "skeleton" }
 ]
