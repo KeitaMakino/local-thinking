@@ -203,9 +203,10 @@
     to{opacity:1;transform:scale(1);}
   }
   /* 表紙はオープナー終了タイミングでフェードイン。
-     opener表示中は表紙を透明に、.cover-revealedクラスでフェードイン。 */
-  .cover{opacity:0;transition:opacity 1.2s ease;}
-  .cover.cover-revealed{opacity:1;}
+     opener表示中は表紙を透明に、.cover-revealedクラスでフェードイン。
+     ※ body.cover にも当たらないよう、必ずID指定で表紙sectionだけを対象にする */
+  #cover{opacity:0;transition:opacity 1.2s ease;}
+  #cover.cover-revealed{opacity:1;}
   /* メニュー／SCROLL／しおり は撤去。表紙は top.webp 一枚。
      下スクロールで obi に到達し、obi内の「本文を読みはじめる」「つづきから読む」を使う。 */
 
