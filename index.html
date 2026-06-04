@@ -232,6 +232,22 @@
     display:block;margin-top:12px;font-style:normal;font-size:10.5px;
     letter-spacing:.06em;color:#A69C8A;
   }
+  /* ===== cover image下の概要文章 ===== */
+  .cv-intro{
+    background:var(--paper);
+    padding:48px 32px 46px;
+  }
+  .cv-intro-kicker{
+    font-family:"Jost",sans-serif;font-size:10px;letter-spacing:.34em;
+    color:var(--accent);text-align:center;margin-bottom:18px;
+  }
+  .cv-intro-body{
+    font-family:"Zen Maru Gothic",sans-serif;
+    font-size:14px;line-height:2.1;letter-spacing:.04em;
+    color:var(--ink);margin:0;
+    max-width:460px;margin-left:auto;margin-right:auto;
+  }
+
   .obi-enter{
     margin-top:30px;border:none;background:var(--accent);color:#fff;
     font-family:inherit;font-size:14px;letter-spacing:.06em;
@@ -571,10 +587,14 @@
       <button class="nav" id="next">›</button>
     </div>
 
-    <!-- ===== COVER (top.webp 一枚 + 推薦帯) ===== -->
+    <!-- ===== COVER (top.webp 一枚 + 概要 + 推薦帯) ===== -->
     <section class="cover" id="cover">
       <div class="cv-screen">
         <div class="cv-photo"></div>
+      </div>
+      <div class="cv-intro">
+        <div class="cv-intro-kicker">ABOUT THIS BOOK</div>
+        <p class="cv-intro-body">40歳、東京から南房総へ。「降りる」ことを選んだ著者が、地方での暮らしの中で見つけた、もう一つの豊かさと思考のかたち。上昇志向のロジカルシンキングに対して、小さく身丈で感察する「ローカルシンキング」を提唱する。</p>
       </div>
       <div class="cv-obi">
         <div class="obi-kicker">RECOMMENDED</div>
