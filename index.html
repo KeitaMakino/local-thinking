@@ -406,9 +406,62 @@
   .cmt .badge{font-size:8px;letter-spacing:.1em;background:var(--sea);color:#fff;padding:2px 6px;border-radius:4px;}
   .cmt .tx{font-size:12.5px;line-height:1.8;color:#444;margin-top:4px;}
   .cmt .meta{font-size:10px;color:var(--ink-soft);margin-top:5px;}
-  .composer{border-top:1px solid var(--paper-edge);padding:12px 16px;display:flex;gap:9px;align-items:center;flex:none;}
-  .composer .fake{flex:1;background:var(--paper-edge);border-radius:999px;padding:10px 14px;font-size:12px;color:var(--ink-soft);cursor:pointer;}
-  .composer .send{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:15px;cursor:pointer;flex:none;}
+  .composer{border-top:1px solid var(--paper-edge);padding:12px 16px;display:flex;flex-direction:column;gap:8px;flex:none;}
+  .note-input{
+    width:100%;box-sizing:border-box;
+    border:1px solid var(--paper-edge);border-radius:10px;
+    padding:10px 12px;font-size:13.5px;line-height:1.65;color:var(--ink);
+    background:#FAFAF7;outline:none;resize:none;font-family:inherit;
+    transition:border-color .15s;
+  }
+  .note-input:focus{border-color:var(--accent);background:#fff;}
+  .note-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .note-vis{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;}
+  .note-vis input{accent-color:var(--accent);}
+  .note-vis-lbl{font-size:11.5px;color:var(--ink-soft);letter-spacing:.04em;}
+  .note-send{
+    border:none;background:var(--accent);color:#fff;font-family:inherit;
+    font-size:13px;letter-spacing:.06em;padding:9px 18px;border-radius:999px;cursor:pointer;
+  }
+  .note-send:active{transform:scale(.98);background:var(--accent-deep);}
+  .note-send[disabled]{opacity:.5;cursor:not-allowed;}
+  .composer-lock{justify-content:center;align-items:center;}
+  .note-locked{font-size:12px;color:var(--ink-soft);text-align:center;}
+  .link-btn{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit;}
+
+  /* 一覧表示のメモアイテム */
+  .note-section-head{font-size:10.5px;letter-spacing:.18em;color:var(--ink-soft);
+    margin:14px 0 8px;font-family:"Jost",sans-serif;}
+  .note-section-head:first-child{margin-top:4px;}
+  .note-item{
+    background:#FBF9F5;border:1px solid var(--paper-edge);
+    border-radius:10px;padding:11px 13px;margin-bottom:8px;
+    font-size:12.5px;line-height:1.75;color:var(--ink);
+    font-family:"Zen Maru Gothic",sans-serif;
+    white-space:pre-wrap;word-wrap:break-word;
+    position:relative;
+  }
+  .note-item .nm{font-family:"Jost",sans-serif;font-size:10.5px;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:4px;}
+  .note-item .vis{font-size:10px;color:var(--ink-soft);float:right;}
+  .note-item.mine{background:#FFF8EF;border-color:#EFE4CC;}
+  .note-item .del{
+    position:absolute;top:6px;right:8px;background:none;border:none;
+    color:var(--ink-soft);font-size:13px;cursor:pointer;padding:2px 6px;
+  }
+  .note-item .del:hover{color:var(--accent-deep);}
+  .note-empty{font-size:12px;color:var(--ink-soft);text-align:center;padding:18px 0;}
+
+  /* メモFAB（読書画面の右下に常駐） */
+  .notefab{
+    position:fixed;right:18px;bottom:78px;z-index:30;
+    width:46px;height:46px;border-radius:50%;border:none;
+    background:var(--accent);color:#fff;font-size:19px;cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,.22);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;
+  }
+  .notefab:active{transform:scale(.94);}
+  body.cover .notefab{display:none;}
 
   /* toast */
   .toast{
@@ -718,13 +771,28 @@
     <div class="scrim" id="scrim"></div>
     <div class="sheet" id="sheet">
       <div class="grab"></div>
-      <div class="sh-head"><h3 id="shtitle">このページへの書き込み</h3><p id="shsub"></p></div>
+      <div class="sh-head">
+        <h3 id="shtitle">このページのメモ</h3>
+        <p id="shsub"></p>
+      </div>
       <div class="sh-body" id="shbody"></div>
-      <div class="composer">
-        <div class="fake" id="fakeinput">感想やエピソードを書く…</div>
-        <button class="send" id="sendbtn">↑</button>
+      <div class="composer" id="noteComposer">
+        <textarea class="note-input" id="noteInput" rows="2" placeholder="このページのメモを残す…"></textarea>
+        <div class="note-row">
+          <label class="note-vis">
+            <input type="checkbox" id="notePublic">
+            <span class="note-vis-lbl">みんなに公開</span>
+          </label>
+          <button class="note-send" id="noteSend">投稿</button>
+        </div>
+      </div>
+      <div class="composer composer-lock" id="noteLockedNote" style="display:none;">
+        <div class="note-locked">メモを書くには <button class="link-btn" id="noteLoginHint">ログイン</button> が必要です</div>
       </div>
     </div>
+
+    <!-- FAB: メモ書き込み -->
+    <button class="notefab" id="notefab" aria-label="メモ">✎</button>
 
     <div class="toast" id="toast"></div>
 
@@ -1374,26 +1442,145 @@
 
   /* heatmap & marker click handlers: see attachStripDelegate() below */
 
-  /* comments (data loaded at top from data/comments.json) */
-  function openSheet(id){
-    var data=COMMENTS[id]; if(!data) return;
-    el('shsub').textContent=data.sub;
-    var body=el('shbody'); body.innerHTML='';
-    data.items.forEach(function(c){
-      var av=(c.name||'?').slice(0,1);
-      var d=document.createElement('div');
-      d.className='cmt'+(c.role==='author'?' author':'');
-      d.innerHTML='<div class="av">'+esc(av)+'</div><div class="bd">'+
-        '<div class="nm">'+esc(c.name)+(c.role==='author'?'<span class="badge">著者</span>':'')+'</div>'+
-        '<div class="tx">'+esc(c.text)+'</div><div class="meta">'+esc(c.meta)+'</div></div>';
-      body.appendChild(d);
-    });
+  /* ===== Notes (Supabase経由) =====
+     - 現在のページに紐づくメモ：自分のメモ＋公開メモ
+     - page_key: "{chapter_id}:{relIdx}" の形で安定識別
+  */
+  function currentPageKey(){
+    var ch = chapterOf(idx);
+    var r = chapterRanges[ch.id];
+    return ch.id + ':' + (idx - r.start);
+  }
+  function currentPageTitle(){
+    var ch = chapterOf(idx);
+    var r = chapterRanges[ch.id];
+    return ch.title + '（P.' + ((idx - r.start)+1) + '）';
+  }
+  async function renderNoteSheet(){
+    var pk = currentPageKey();
+    var body = el('shbody'); body.innerHTML = '<div class="note-empty">読み込み中…</div>';
+    el('shtitle').textContent = 'このページのメモ';
+    el('shsub').textContent = currentPageTitle();
+
+    /* ログイン状態に応じて composer をスイッチ */
+    var user = WEBON.isReady() ? await WEBON.getUser() : null;
+    el('noteComposer').style.display = user ? '' : 'none';
+    el('noteLockedNote').style.display = user ? 'none' : '';
+
+    /* メモを並行取得 */
+    var myNotes = [], pubNotes = [];
+    if(WEBON.isReady()){
+      try {
+        var [mine, pub] = await Promise.all([
+          user ? WEBON.listMyNotes(pk) : Promise.resolve([]),
+          WEBON.listPublicNotes(pk)
+        ]);
+        myNotes = mine || [];
+        pubNotes = pub || [];
+      } catch(e) { console.error('[WEBON] notes fetch error', e); }
+    }
+    /* 公開で取れる自分のメモは「自分のメモ」側にだけ出して、みんなの側から除外 */
+    if(user){
+      var myIds = new Set(myNotes.map(function(n){ return n.id; }));
+      pubNotes = pubNotes.filter(function(n){ return !myIds.has(n.id); });
+    }
+
+    body.innerHTML = '';
+
+    /* 自分のメモ */
+    if(user){
+      var head1 = document.createElement('div');
+      head1.className = 'note-section-head';
+      head1.textContent = 'MY NOTES';
+      body.appendChild(head1);
+      if(myNotes.length === 0){
+        var empty = document.createElement('div');
+        empty.className = 'note-empty';
+        empty.textContent = 'このページにはまだメモがありません。';
+        body.appendChild(empty);
+      } else {
+        myNotes.forEach(function(n){
+          var d = document.createElement('div');
+          d.className = 'note-item mine';
+          d.innerHTML = '<div class="nm">'+(n.is_public?'🌐 公開':'🔒 自分のみ')+'</div>'
+                      + '<button class="del" data-id="'+esc(n.id)+'" aria-label="削除">×</button>'
+                      + esc(n.content);
+          body.appendChild(d);
+        });
+      }
+    }
+
+    /* みんなのメモ（公開） */
+    var head2 = document.createElement('div');
+    head2.className = 'note-section-head';
+    head2.textContent = 'PUBLIC NOTES';
+    body.appendChild(head2);
+    if(pubNotes.length === 0){
+      var empty2 = document.createElement('div');
+      empty2.className = 'note-empty';
+      empty2.textContent = 'まだ公開メモはありません。';
+      body.appendChild(empty2);
+    } else {
+      pubNotes.forEach(function(n){
+        var name = (n.profiles && (n.profiles.pen_name || n.profiles.display_name)) || '匿名';
+        var d = document.createElement('div');
+        d.className = 'note-item';
+        d.innerHTML = '<div class="nm">'+esc(name)+'</div>'+esc(n.content);
+        body.appendChild(d);
+      });
+    }
+  }
+  function openSheet(){ /* 後方互換: 旧呼び出しは note sheet に統合 */
+    openNoteSheet();
+  }
+  function openNoteSheet(){
     scrim.classList.add('show'); sheet.classList.add('show');
+    renderNoteSheet();
   }
   function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
   scrim.addEventListener('click',closeSheet);
-  el('fakeinput').addEventListener('click',function(){ toast('（プロトタイプ）コメント投稿は本実装で対応します'); });
-  el('sendbtn').addEventListener('click',function(){ toast('（プロトタイプ）コメント投稿は本実装で対応します'); });
+
+  /* FAB → メモを開く */
+  el('notefab').addEventListener('click', openNoteSheet);
+
+  /* 削除ボタン（自分のメモ） */
+  el('shbody').addEventListener('click', async function(e){
+    var btn = e.target.closest('.del'); if(!btn) return;
+    if(!confirm('このメモを削除しますか？')) return;
+    var id = btn.dataset.id;
+    if(WEBON.isReady()){
+      try {
+        await window._sbDel(id);
+        renderNoteSheet();
+        toast('メモを削除しました');
+      } catch(e2){ toast('削除に失敗しました'); }
+    }
+  });
+
+  /* 投稿 */
+  el('noteSend').addEventListener('click', async function(){
+    var content = (el('noteInput').value||'').trim();
+    if(!content) return;
+    var isPub = el('notePublic').checked;
+    var pk = currentPageKey();
+    el('noteSend').disabled = true;
+    var r = await WEBON.saveNote(pk, content, isPub);
+    el('noteSend').disabled = false;
+    if(r && r.error){
+      toast('保存できませんでした：' + (r.error.message || ''));
+      return;
+    }
+    el('noteInput').value = '';
+    el('notePublic').checked = false;
+    toast(isPub ? '公開メモを投稿しました' : 'メモを保存しました');
+    renderNoteSheet();
+  });
+
+  /* ログイン誘導リンク */
+  el('noteLoginHint').addEventListener('click', function(){
+    closeSheet();
+    el('accountBtn').click();
+  });
 
   /* ===== strip delegated click handler =====
      marker / hl / o2obtn / pwbtn / notify はすべて strip 内の動的要素なので
