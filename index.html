@@ -174,7 +174,8 @@
     -webkit-overflow-scrolling:touch;scroll-behavior:smooth;
     transition:opacity .55s ease,transform .55s ease;
   }
-  .cover.dismissed{opacity:0;transform:scale(1.06);pointer-events:none;}
+  /* 「本文を読みはじめる」押下時の退場。#cover.cover-revealedに勝つよう ID指定で specificity を揃える */
+  #cover.dismissed{opacity:0;transform:scale(1.06);pointer-events:none;}
   .cv-screen{position:relative;width:100%;height:100%;overflow:hidden;}
   .cv-photo{
     position:absolute;inset:0;z-index:1;background-color:#6c97b5;
@@ -193,18 +194,17 @@
   }
   .opener.gone{opacity:0;pointer-events:none;}
   .opener-copy{
-    display:flex;flex-direction:column;align-items:center;gap:12px;
-    text-align:center;color:#fff;
+    /* 縦書き2行：右が1行目、左が2行目（row-reverseで右側を先頭に） */
+    display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;
+    gap:26px;color:#fff;
     opacity:0;transform:translateY(6px);
     animation:openerCopyIn 2.0s cubic-bezier(.2,.7,.2,1) .4s forwards;
   }
-  .opener-copy .c1{
-    font-family:"Zen Maru Gothic","Hiragino Sans",sans-serif;
-    font-size:14px;letter-spacing:.22em;line-height:1.9;font-weight:400;
-  }
+  .opener-copy .c1,
   .opener-copy .c2{
+    writing-mode:vertical-rl;text-orientation:mixed;
     font-family:"Zen Maru Gothic","Hiragino Sans",sans-serif;
-    font-size:17px;letter-spacing:.18em;line-height:1.85;font-weight:500;
+    font-size:16px;letter-spacing:.20em;line-height:1.85;font-weight:500;
   }
   @keyframes openerCopyIn{
     from{opacity:0;transform:translateY(6px);}
