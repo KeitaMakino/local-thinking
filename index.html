@@ -182,30 +182,32 @@
     background-size:cover;background-position:center;background-repeat:no-repeat;
   }
 
-  /* ===== オープニングスプラッシュ（LOCAL THINKINGロゴアニメ） ===== */
+  /* ===== オープニングスプラッシュ（LOCAL THINKINGロゴアニメ） =====
+     真っ黒背景に白ロゴ。ゆっくりフェードイン→静止→ゆっくりフェードアウト。
+     表紙(cover)も同タイミングでフェードインさせる。 */
   .opener{
-    position:fixed;inset:0;z-index:9999;background:var(--sea);
+    position:fixed;inset:0;z-index:9999;background:#000;
     display:flex;align-items:center;justify-content:center;
-    opacity:1;transition:opacity .55s ease;
+    opacity:1;transition:opacity 1.4s ease;
     pointer-events:auto;
   }
   .opener.gone{opacity:0;pointer-events:none;}
   .opener-logo{
-    /* 表紙のLOCAL THINKINGとほぼ同じ実寸（表紙では画面幅の約65%） */
-    width:65%;max-width:480px;height:auto;display:block;
-    filter:drop-shadow(0 4px 22px rgba(0,0,0,.22));
-    opacity:0;transform:scale(.97);
-    animation:openerLogoIn 1.0s cubic-bezier(.2,.7,.2,1) .15s forwards;
+    /* 半分サイズ。表紙のLOCAL THINKINGよりだいぶ小さく上品に。 */
+    width:33%;max-width:240px;height:auto;display:block;
+    opacity:0;transform:scale(.985);
+    animation:openerLogoIn 2.0s cubic-bezier(.2,.7,.2,1) .4s forwards;
   }
   @keyframes openerLogoIn{
-    from{opacity:0;transform:scale(.97);}
+    from{opacity:0;transform:scale(.985);}
     to{opacity:1;transform:scale(1);}
   }
-  /* メニュー／SCROLL は撤去。表紙は top.png 一枚。下スクロールで obi に到達できる。 */
-  .cv-mark{position:absolute;left:12%;bottom:9%;z-index:6;display:none;align-items:center;gap:6px;
-    font-size:11px;color:#fff;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.55);
-    border-radius:999px;padding:5px 12px;cursor:pointer;}
-  .cv-mark b{font-weight:600;font-family:"Jost",sans-serif;}
+  /* 表紙はオープナー終了タイミングでフェードイン。
+     opener表示中は表紙を透明に、.cover-revealedクラスでフェードイン。 */
+  .cover{opacity:0;transition:opacity 1.2s ease;}
+  .cover.cover-revealed{opacity:1;}
+  /* メニュー／SCROLL／しおり は撤去。表紙は top.webp 一枚。
+     下スクロールで obi に到達し、obi内の「本文を読みはじめる」「つづきから読む」を使う。 */
 
   /* ===== cover obi (recommendations) ===== */
   .cv-obi{
@@ -236,6 +238,15 @@
     padding:16px;border-radius:12px;cursor:pointer;transition:.15s;
   }
   .obi-enter:active{transform:scale(.98);background:var(--accent-deep);}
+  /* obi 内の「つづきから読む」ボタン（しおりがある時のみJSでdisplay表示） */
+  .obi-resume{
+    margin-top:10px;border:1px solid rgba(237,231,218,.32);
+    background:transparent;color:#EDE7DA;
+    font-family:inherit;font-size:13px;letter-spacing:.05em;
+    padding:14px;border-radius:12px;cursor:pointer;transition:.15s;
+  }
+  .obi-resume:active{transform:scale(.98);background:rgba(255,255,255,.04);}
+  .obi-resume #obiresumep{font-family:"Jost",sans-serif;letter-spacing:.08em;}
   .obi-note{
     margin-top:14px;text-align:center;font-size:9.5px;
     letter-spacing:.05em;color:#6f6557;
@@ -560,11 +571,10 @@
       <button class="nav" id="next">›</button>
     </div>
 
-    <!-- ===== COVER (top.png 一枚 + 推薦帯) ===== -->
+    <!-- ===== COVER (top.webp 一枚 + 推薦帯) ===== -->
     <section class="cover" id="cover">
       <div class="cv-screen">
         <div class="cv-photo"></div>
-        <div class="cv-mark" id="cvmark">しおり <b id="cvmarkp">P.2</b> から続ける</div>
       </div>
       <div class="cv-obi">
         <div class="obi-kicker">RECOMMENDED</div>
@@ -582,6 +592,7 @@
           <cite>— にしの さき（書店員）</cite>
         </blockquote>
         <button class="obi-enter" id="obienter">本文を読みはじめる →</button>
+        <button class="obi-resume" id="obiresume" style="display:none;">つづきから読む（<span id="obiresumep">P.2</span>）</button>
         <div class="obi-note">※推薦コメントはサンプルです（本実装時に差し替え）</div>
       </div>
     </section>
@@ -618,18 +629,27 @@
   "use strict";
   function el(id){ return document.getElementById(id); }
 
-  /* ===== オープニングスプラッシュの終了 ===== */
-  /* ロゴアニメ（フェードイン 0.15→1.15s）＋ 静止 1.0s → フェードアウト 0.55s */
+  /* ===== オープニングスプラッシュの終了 =====
+     スプラッシュをゆっくり消し、同時に表紙(cover)をフェードインさせる。
+     タイムライン:
+       0.0s  : opener表示(真っ黒)、ロゴopacity0
+       0.4s  : ロゴが2.0sかけてフェードイン
+       2.4s  : ロゴ静止
+       3.4s  : opener全体が1.4sかけてフェードアウト、同時にcoverもフェードイン
+       4.8s  : opener要素削除
+  */
   (function(){
     var opener = document.getElementById('opener');
     if(!opener) return;
+    var dismissed = false;
     var dismiss = function(){
+      if(dismissed) return; dismissed = true;
       opener.classList.add('gone');
-      setTimeout(function(){ if(opener && opener.parentNode) opener.parentNode.removeChild(opener); }, 700);
+      var cover = document.getElementById('cover');
+      if(cover) cover.classList.add('cover-revealed');
+      setTimeout(function(){ if(opener && opener.parentNode) opener.parentNode.removeChild(opener); }, 1500);
     };
-    /* 2.1秒後にフェードアウト開始 → 約2.7秒で完全消去 */
-    setTimeout(dismiss, 2100);
-    /* タップで早送りも可能に */
+    setTimeout(dismiss, 3400);
     opener.addEventListener('click', dismiss, {once:true});
   })();
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
@@ -965,8 +985,9 @@
     var v=parseInt(localStorage.getItem(KEY),10);
     if(v>0 && v<TOTAL){
       savedIdx=v;
-      el('cvmarkp').textContent=bookmarkLabel(v);
-      el('cvmark').style.display='inline-flex';
+      var pLabel = bookmarkLabel(v);
+      var rp = el('obiresumep'); if(rp) rp.textContent = pLabel;
+      var rb = el('obiresume'); if(rb) rb.style.display = 'block';
     }
   }catch(e){}
 
@@ -1004,9 +1025,9 @@
   /* ===== cover open / close ===== */
   function openBook(){ cover.classList.add('dismissed'); document.body.classList.remove('cover'); }
   function showCover(){ cover.classList.remove('dismissed'); document.body.classList.add('cover'); cover.scrollTop=0; updateCoverParallax(); }
-  /* cv-enter / cv-menu は撤去済みのため、ガード付きで参照 */
+  /* cv-enter / cv-menu は撤去済み。しおりはobiの「つづきから読む」ボタンに移設。 */
   el('obienter').addEventListener('click',function(e){ e.stopPropagation(); openBook(); });
-  el('cvmark').addEventListener('click',function(e){ e.stopPropagation(); go(savedIdx); openBook(); });
+  el('obiresume').addEventListener('click',function(e){ e.stopPropagation(); go(savedIdx); openBook(); });
 
   /* 表紙のパララックス演出はロゴ撤去にともない廃止。
      スタブだけ残して showCover() からの呼び出しを安全に動かす。 */
