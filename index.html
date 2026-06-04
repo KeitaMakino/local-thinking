@@ -339,8 +339,10 @@
   }
   .auth-send:active,.auth-logout:active{transform:scale(.98);background:var(--accent-deep);}
   .auth-send[disabled]{opacity:.5;cursor:not-allowed;}
-  .auth-logout{background:transparent;color:var(--ink);border:1px solid var(--paper-edge);}
+  .auth-logout{background:transparent;color:var(--ink);border:1px solid var(--paper-edge);margin-top:18px;}
   .auth-logout:active{background:var(--paper-edge);}
+  .auth-field{margin-top:18px;text-align:left;}
+  .auth-label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:6px;}
   .auth-status{
     margin-top:14px;font-size:12px;line-height:1.7;color:var(--ink-soft);
     text-align:center;font-family:"Zen Maru Gothic",sans-serif;
@@ -451,17 +453,20 @@
   .note-item .del:hover{color:var(--accent-deep);}
   .note-empty{font-size:12px;color:var(--ink-soft);text-align:center;padding:18px 0;}
 
-  /* メモFAB（読書画面の右下に常駐） */
+  /* メモFAB（読書画面の角に常駐） */
   .notefab{
-    position:fixed;right:18px;bottom:78px;z-index:30;
-    width:46px;height:46px;border-radius:50%;border:none;
-    background:var(--accent);color:#fff;font-size:19px;cursor:pointer;
-    box-shadow:0 6px 18px rgba(0,0,0,.22);
+    position:fixed;bottom:78px;z-index:30;
+    right:14px; /* 横書き時：右下。縦書きは下で左に切替 */
+    width:42px;height:42px;border-radius:50%;border:none;
+    background:var(--accent);color:#fff;font-size:17px;cursor:pointer;
+    box-shadow:0 5px 16px rgba(0,0,0,.20);
     display:flex;align-items:center;justify-content:center;
     transition:transform .15s;
   }
   .notefab:active{transform:scale(.94);}
   body.cover .notefab{display:none;}
+  /* 縦書きでは右が文字の始まり。FABを左下に置いて本文に被らないように */
+  body.vert .notefab{right:auto;left:14px;}
 
   /* toast */
   .toast{
@@ -813,8 +818,14 @@
     </div>
     <div id="authStateIn" style="display:none;">
       <div class="auth-kicker">WEBON ACCOUNT</div>
-      <h3 class="auth-title">ログイン中</h3>
+      <h3 class="auth-title">アカウント設定</h3>
       <p class="auth-sub" id="authUserEmail">—</p>
+      <div class="auth-field">
+        <label class="auth-label" for="authPenName">表示名（公開メモで使われます）</label>
+        <input type="text" class="auth-email" id="authPenName" placeholder="例：けいた" maxlength="40">
+      </div>
+      <button class="auth-send" id="authSaveProfile">保存</button>
+      <div class="auth-status" id="authProfileStatus"></div>
       <button class="auth-logout" id="authLogout">ログアウト</button>
     </div>
   </div>
@@ -1795,6 +1806,13 @@
       paneIn.style.display='';
       emailLabel.textContent = user.email || '—';
       lblAccount.textContent = 'アカウント';
+      /* プロフィールを取得して pen_name 欄に反映 */
+      if(WEBON.isReady()){
+        WEBON.getProfile().then(function(p){
+          var input = el('authPenName');
+          if(input) input.value = (p && p.pen_name) || '';
+        });
+      }
     }
     function showLoggedOut(){
       paneOut.style.display='';
@@ -1830,6 +1848,28 @@
       await WEBON.signOut();
       closeModal();
     });
+
+    /* プロフィール保存 */
+    var btnSaveProfile = el('authSaveProfile');
+    var penInput = el('authPenName');
+    var profileStatus = el('authProfileStatus');
+    if(btnSaveProfile){
+      btnSaveProfile.addEventListener('click', async function(){
+        var v = (penInput.value||'').trim();
+        btnSaveProfile.disabled = true;
+        profileStatus.textContent = '保存中…'; profileStatus.className = 'auth-status';
+        var r = await WEBON.updateProfile({ pen_name: v || null });
+        btnSaveProfile.disabled = false;
+        if(r && r.error){
+          profileStatus.textContent = 'エラー：' + (r.error.message||'');
+          profileStatus.className = 'auth-status err';
+        } else {
+          profileStatus.textContent = '保存しました';
+          profileStatus.className = 'auth-status ok';
+          setTimeout(function(){ profileStatus.textContent=''; }, 2000);
+        }
+      });
+    }
 
     /* 初期状態を反映＋ログイン状態の変更を購読 */
     if(WEBON.isReady()){

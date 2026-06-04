@@ -137,6 +137,23 @@
     deleteNote: async function(noteId){
       if(!ready) return {error:{message:"offline"}};
       return await sb.from('notes').delete().eq('id', noteId);
+    },
+
+    /* プロフィール */
+    getProfile: async function(){
+      if(!ready) return null;
+      var u = await this.getUser(); if(!u) return null;
+      var r = await sb.from('profiles').select('*').eq('id', u.id).maybeSingle();
+      return r.data || null;
+    },
+    updateProfile: async function(patch){
+      if(!ready) return {error:{message:"offline"}};
+      var u = await this.getUser(); if(!u) return {error:{message:"not_signed_in"}};
+      /* 行が無ければupsert、あればupdate */
+      return await sb.from('profiles').upsert(
+        Object.assign({ id: u.id, updated_at: new Date().toISOString() }, patch),
+        { onConflict: 'id' }
+      );
     }
   };
 
