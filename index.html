@@ -604,6 +604,9 @@
     overflow:hidden;
   }
   body.vert .prose p+p{margin-top:0;margin-right:1em;}
+  /* 前ページからの続きの段落は、段落間マージンを取らない（自然な続きに見せる） */
+  body.vert .prose p.cont{margin-right:0;}
+  .prose p.cont{margin-top:0;text-indent:0;}
   body.vert .ptitle{
     writing-mode:vertical-rl;text-orientation:mixed;
     line-height:1.55;font-size:clamp(16px,3.6vh,20px);
@@ -994,10 +997,11 @@
     return esc(s.text);
   }
   function renderPara(p){
-    var c = '';
-    if(p.lead) c = 'lead';
-    else if(p.outro) c = 'outro-line';
-    var cls = c ? ' class="'+c+'"' : '';
+    var classes = [];
+    if(p.lead) classes.push('lead');
+    else if(p.outro) classes.push('outro-line');
+    if(p.cont) classes.push('cont'); // 前ページからの続きの段落（マージン抑制）
+    var cls = classes.length ? ' class="'+classes.join(' ')+'"' : '';
     var inner = p.spans ? p.spans.map(renderSpan).join('') : esc(p.text);
     return '<p'+cls+'>'+inner+'</p>';
   }
