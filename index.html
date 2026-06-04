@@ -178,42 +178,16 @@
   .cv-screen{position:relative;width:100%;height:100%;overflow:hidden;}
   .cv-photo{
     position:absolute;inset:0;z-index:1;background-color:#6c97b5;
-    background-image:url("images/cover_bg.webp"),
-      linear-gradient(177deg,#4FB4E6,#79C6DC 32%,#9FBE79 52%,#3E6B3A);
-    background-size:cover,cover;background-position:center;background-repeat:no-repeat;
-  }
-  .cv-logomain{
-    position:absolute;z-index:2;left:50%;top:21%;width:108%;
-    transform:translateX(-50%);
-    filter:drop-shadow(0 4px 20px rgba(0,0,0,.22));
-  }
-  .cv-fg{
-    position:absolute;inset:0;z-index:3;
-    background-image:url("images/cover_bg2.webp");
+    background-image:url("images/top.png");
     background-size:cover;background-position:center;background-repeat:no-repeat;
   }
-  .cv-botscrim{position:absolute;inset:0;z-index:4;pointer-events:none;
-    background:linear-gradient(180deg,transparent 48%,rgba(6,16,9,.46));}
-  .cv-frame{position:absolute;inset:14px;z-index:5;border:1.6px solid rgba(255,255,255,.92);
-    border-radius:15px;color:#fff;}
-  .cv-top{position:absolute;top:16px;left:18px;right:15px;display:flex;
-    align-items:center;justify-content:space-between;}
-  .cv-logoyoko{height:13px;width:auto;display:block;
-    filter:drop-shadow(0 1px 5px rgba(0,0,0,.4));}
-  .cv-menu{background:none;border:none;padding:5px 3px;cursor:pointer;
+  /* 機能UI（メニュー／スクロール／しおり）は cv-screen に直接置く。装飾オーバーレイは廃止。 */
+  .cv-menu{position:absolute;top:22px;right:20px;z-index:6;
+    background:none;border:none;padding:6px 3px;cursor:pointer;
     display:flex;flex-direction:column;gap:5px;}
   .cv-menu span{display:block;width:27px;height:3px;background:#fff;border-radius:2px;
-    box-shadow:0 1px 3px rgba(0,0,0,.35);}
-  .cv-sub-v{position:absolute;right:7.5%;top:52%;display:flex;flex-direction:row-reverse;
-    align-items:flex-start;gap:10px;}
-  .cv-sub-v span{writing-mode:vertical-rl;
-    font-family:"Zen Maru Gothic",sans-serif;
-    font-size:clamp(15px,4.3vw,17px);letter-spacing:.14em;line-height:1;
-    text-shadow:0 1px 14px rgba(0,0,0,.66);}
-  .cv-author{position:absolute;left:12%;bottom:16.5%;
-    font-family:"Jost",sans-serif;font-weight:400;
-    font-size:clamp(17px,5vw,20px);letter-spacing:.2em;text-shadow:0 1px 14px rgba(0,0,0,.65);}
-  .cv-enter{position:absolute;left:50%;bottom:4.6%;transform:translateX(-50%);
+    box-shadow:0 1px 4px rgba(0,0,0,.5);}
+  .cv-enter{position:absolute;left:50%;bottom:4.6%;transform:translateX(-50%);z-index:6;
     background:none;border:none;cursor:pointer;
     display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 16px;}
   .cv-enter .lbl{font-family:"Jost",sans-serif;font-size:9px;letter-spacing:.28em;
@@ -222,7 +196,7 @@
     border-bottom:1.8px solid #fff;transform:rotate(45deg);
     filter:drop-shadow(0 1px 4px rgba(0,0,0,.5));animation:nudge 1.9s ease-in-out infinite;}
   @keyframes nudge{0%,100%{transform:rotate(45deg);}50%{transform:rotate(45deg) translate(2.4px,2.4px);}}
-  .cv-mark{position:absolute;left:12%;bottom:9%;display:none;align-items:center;gap:6px;
+  .cv-mark{position:absolute;left:12%;bottom:9%;z-index:6;display:none;align-items:center;gap:6px;
     font-size:11px;color:#fff;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.55);
     border-radius:999px;padding:5px 12px;cursor:pointer;}
   .cv-mark b{font-weight:600;font-family:"Jost",sans-serif;}
@@ -575,23 +549,13 @@
       <button class="nav" id="next">›</button>
     </div>
 
-    <!-- ===== COVER (photo + layered logo + obi) ===== -->
+    <!-- ===== COVER (top.png 一枚 + 機能UI + 推薦帯) ===== -->
     <section class="cover" id="cover">
       <div class="cv-screen">
         <div class="cv-photo"></div>
-        <img class="cv-logomain" src="images/logo_main.png" alt="LOCAL THINKING">
-        <div class="cv-fg"></div>
-        <div class="cv-botscrim"></div>
-        <div class="cv-frame">
-          <div class="cv-top">
-            <img class="cv-logoyoko" src="images/logo_yoko.png" alt="LOCAL THINKING">
-            <button class="cv-menu" id="cvmenu" aria-label="目次"><span></span><span></span><span></span></button>
-          </div>
-          <div class="cv-sub-v"><span>ローカル思考で見つける</span><span>資本主義のオルタナティブ</span></div>
-          <div class="cv-author">Keita Makino</div>
-          <button class="cv-enter" id="cventer" aria-label="推薦のことばへ"><span class="lbl">SCROLL</span><span class="dn"></span></button>
-          <div class="cv-mark" id="cvmark">しおり <b id="cvmarkp">P.2</b> から続ける</div>
-        </div>
+        <button class="cv-menu" id="cvmenu" aria-label="目次"><span></span><span></span><span></span></button>
+        <button class="cv-enter" id="cventer" aria-label="推薦のことばへ"><span class="lbl">SCROLL</span><span class="dn"></span></button>
+        <div class="cv-mark" id="cvmark">しおり <b id="cvmarkp">P.2</b> から続ける</div>
       </div>
       <div class="cv-obi">
         <div class="obi-kicker">RECOMMENDED</div>
@@ -1021,26 +985,9 @@
   el('obienter').addEventListener('click',function(e){ e.stopPropagation(); openBook(); });
   el('cvmark').addEventListener('click',function(e){ e.stopPropagation(); go(savedIdx); openBook(); });
 
-  /* ===== 表紙パララックス：スクロールでロゴが山に隠れていく演出 =====
-     LOGO を下方向に translateY して、visually スクロールから取り残させる。
-     相対的に山（cv-fg）の中に飲み込まれていくように見える。 */
-  var cvLogoMain = cover.querySelector('.cv-logomain');
-  var parallaxTicking = false;
-  function updateCoverParallax(){
-    if(!cvLogoMain) return;
-    var st = cover.scrollTop;
-    /* 0.5 = LOGOが「スクロール量の50%分だけ動かないでいる」係数。
-       0=他と一緒に動く、1.0=完全静止＝最も飲み込まれる感 */
-    cvLogoMain.style.transform = 'translate(-50%, ' + (st * 0.5) + 'px)';
-  }
-  cover.addEventListener('scroll', function(){
-    if(parallaxTicking) return;
-    parallaxTicking = true;
-    requestAnimationFrame(function(){
-      updateCoverParallax();
-      parallaxTicking = false;
-    });
-  });
+  /* 表紙のパララックス演出はロゴ撤去にともない廃止。
+     スタブだけ残して showCover() からの呼び出しを安全に動かす。 */
+  function updateCoverParallax(){}
 
   /* ===== table of contents ===== */
   function openToc(){ toc.classList.add('show'); }
