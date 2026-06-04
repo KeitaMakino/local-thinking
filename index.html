@@ -621,10 +621,14 @@
     writing-mode:vertical-rl;text-orientation:mixed;
   }
   body.vert .page{
-    /* テキストが画面より広くなった時のために横スクロール（縦書きは段が増えるほど横へ広がる） */
-    overflow-x:auto;overflow-y:hidden;
+    /* 本文は基本ページ幅に収まるよう段落数を絞ってビルドする。
+       縦書きの本文系は overflow-x を hidden にして、左へ溢れたぶんは見せない。
+       例外：TOCプレビュー(.tp-vert)を含むページだけは横スクロールで見せたいので、
+       :has() でセレクタを切り替える。 */
+    overflow-x:hidden;overflow-y:hidden;
     justify-content:flex-start;
   }
+  body.vert .page:has(.tp-vert){overflow-x:auto;}
   /* 縦書き時のタイトルページは縦・横どちらにも中央寄せ */
   body.vert .page:has(.page-vignette){align-items:center;}
   /* 縦書きは紙の本に合わせて「右スワイプ=次ページ」「ページは右→左へ進む」。
