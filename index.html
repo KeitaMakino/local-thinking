@@ -182,9 +182,9 @@
     background-size:cover;background-position:center;background-repeat:no-repeat;
   }
 
-  /* ===== オープニングスプラッシュ（LOCAL THINKINGロゴアニメ） =====
-     真っ黒背景に白ロゴ。ゆっくりフェードイン→静止→ゆっくりフェードアウト。
-     表紙(cover)も同タイミングでフェードインさせる。 */
+  /* ===== オープニングスプラッシュ（コピー2行） =====
+     真っ黒背景に白文字でコピーがゆっくりフェードイン→静止→
+     ゆっくりフェードアウトして、top.webpがフェードインする。 */
   .opener{
     position:fixed;inset:0;z-index:9999;background:#000;
     display:flex;align-items:center;justify-content:center;
@@ -192,15 +192,23 @@
     pointer-events:auto;
   }
   .opener.gone{opacity:0;pointer-events:none;}
-  .opener-logo{
-    /* 半分サイズ。表紙のLOCAL THINKINGよりだいぶ小さく上品に。 */
-    width:33%;max-width:240px;height:auto;display:block;
-    opacity:0;transform:scale(.985);
-    animation:openerLogoIn 2.0s cubic-bezier(.2,.7,.2,1) .4s forwards;
+  .opener-copy{
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    text-align:center;color:#fff;
+    opacity:0;transform:translateY(6px);
+    animation:openerCopyIn 2.0s cubic-bezier(.2,.7,.2,1) .4s forwards;
   }
-  @keyframes openerLogoIn{
-    from{opacity:0;transform:scale(.985);}
-    to{opacity:1;transform:scale(1);}
+  .opener-copy .c1{
+    font-family:"Zen Maru Gothic","Hiragino Sans",sans-serif;
+    font-size:14px;letter-spacing:.22em;line-height:1.9;font-weight:400;
+  }
+  .opener-copy .c2{
+    font-family:"Zen Maru Gothic","Hiragino Sans",sans-serif;
+    font-size:17px;letter-spacing:.18em;line-height:1.85;font-weight:500;
+  }
+  @keyframes openerCopyIn{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
   }
   /* 表紙はオープナー終了タイミングでフェードイン。
      opener表示中は表紙を透明に、.cover-revealedクラスでフェードイン。
@@ -557,9 +565,12 @@
 </head>
 <body class="cover">
 
-<!-- ===== OPENING SPLASH (LOCAL THINKING ロゴアニメ) ===== -->
+<!-- ===== OPENING SPLASH (コピー2行 → top.webpへ) ===== -->
 <div class="opener" id="opener" aria-hidden="true">
-  <img class="opener-logo" src="images/logo_main.png" alt="LOCAL THINKING">
+  <div class="opener-copy">
+    <div class="c1">ローカル思考でみつける</div>
+    <div class="c2">資本主義のオルタナティブ</div>
+  </div>
 </div>
 
 <div class="phone">
