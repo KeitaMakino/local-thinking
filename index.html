@@ -73,8 +73,8 @@
     background:var(--paper);
     box-sizing:border-box;
   }
-  /* 縦書きの本文ページは、左へカラムが溢れた時に切れて見えないよう左padding多め＋右に寄せる */
-  body.vert .page{padding-left:44px;padding-right:28px;}
+  /* 縦書きの本文ページ：左padding少し控えめ＋右側もタイトに */
+  body.vert .page{padding-left:36px;padding-right:28px;}
   /* タイトルページのみ中央寄せ（ヒーローコピー用） */
   .page:has(.page-vignette){justify-content:center;}
   .page::-webkit-scrollbar{display:none;}
