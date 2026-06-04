@@ -194,9 +194,11 @@
   }
   .opener.gone{opacity:0;pointer-events:none;}
   .opener-copy{
-    /* 縦書き2行：右が1行目、左が2行目（row-reverseで右側を先頭に） */
-    display:flex;flex-direction:row-reverse;align-items:center;justify-content:center;
-    gap:26px;color:#fff;
+    /* 縦書き2行：右が1行目、左が2行目。
+       align-items:flex-start で両行の文字頭(上端)を揃える。
+       opener側で全体を中央配置済み（display:flex; align/justify:center）。 */
+    display:flex;flex-direction:row-reverse;align-items:flex-start;justify-content:center;
+    gap:22px;color:#fff;
     opacity:0;transform:translateY(6px);
     animation:openerCopyIn 2.0s cubic-bezier(.2,.7,.2,1) .4s forwards;
   }
@@ -204,7 +206,8 @@
   .opener-copy .c2{
     writing-mode:vertical-rl;text-orientation:mixed;
     font-family:"Zen Maru Gothic","Hiragino Sans",sans-serif;
-    font-size:14px;letter-spacing:.20em;line-height:1.85;font-weight:500;
+    font-size:14px;letter-spacing:.18em;line-height:1.5;font-weight:500;
+    margin:0;
   }
   @keyframes openerCopyIn{
     from{opacity:0;transform:translateY(6px);}
@@ -1054,9 +1057,20 @@
     render(); save();
   }
 
-  /* ===== cover open / close ===== */
-  function openBook(){ cover.classList.add('dismissed'); document.body.classList.remove('cover'); }
-  function showCover(){ cover.classList.remove('dismissed'); document.body.classList.add('cover'); cover.scrollTop=0; updateCoverParallax(); }
+  /* ===== cover open / close =====
+     cover-revealed と dismissed は排他に保つ（同じ specificity でCSSが競合するため） */
+  function openBook(){
+    cover.classList.remove('cover-revealed');
+    cover.classList.add('dismissed');
+    document.body.classList.remove('cover');
+  }
+  function showCover(){
+    cover.classList.remove('dismissed');
+    cover.classList.add('cover-revealed');
+    document.body.classList.add('cover');
+    cover.scrollTop=0;
+    updateCoverParallax();
+  }
   /* cv-enter / cv-menu は撤去済み。しおりはobiの「つづきから読む」ボタンに移設。 */
   el('obienter').addEventListener('click',function(e){ e.stopPropagation(); openBook(); });
   el('obiresume').addEventListener('click',function(e){ e.stopPropagation(); go(savedIdx); openBook(); });
