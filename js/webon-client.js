@@ -9,9 +9,11 @@
 (function(){
   "use strict";
 
-  /* === ここを後で埋める ============================================ */
-  var SUPABASE_URL      = "";       // 例: "https://xxxxx.supabase.co"
-  var SUPABASE_ANON_KEY = "";       // 例: "eyJhbGciOi..."
+  /* === WEBON Supabase接続 ============================================
+     anonキーは公開して問題ない（Row Level Securityで制御される）。
+     service_role キーは絶対にここに書かないこと。 */
+  var SUPABASE_URL      = "https://ezcafdlgpxpwgjatbcgo.supabase.co";
+  var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2FmZGxncHhwd2dqYXRiY2dvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NTgxMTQsImV4cCI6MjA5NjEzNDExNH0.Hd3bJa-_wjujQrujEgci6dD0ijUjGc3Vc5-wxOFoUhk";
   /* ================================================================= */
 
   /* この書籍のslug。multi-book化したらここを書き換える、または外から渡す。 */
@@ -33,6 +35,17 @@
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     ready = true;
     console.info("[WEBON] connected, book =", BOOK_SLUG);
+    /* 接続確認：booksテーブルからこの書籍を読めるか */
+    sb.from('books').select('id,slug,title').eq('slug', BOOK_SLUG).maybeSingle()
+      .then(function(r){
+        if(r.error){
+          console.error("[WEBON] books select error:", r.error.message);
+        } else if(!r.data){
+          console.warn("[WEBON] book not found in DB. Did you run webon_schema.sql?");
+        } else {
+          console.info("[WEBON] book loaded:", r.data);
+        }
+      });
   }
 
   /* ===== 公開API ================================================= */
