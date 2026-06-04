@@ -279,6 +279,15 @@
     margin-top:14px;text-align:center;font-size:9.5px;
     letter-spacing:.05em;color:#6f6557;
   }
+  /* obi 内 ログイン/アカウント ボタン */
+  .obi-account{margin-top:22px;display:flex;justify-content:center;}
+  .obi-account-btn{
+    background:none;border:1px solid rgba(237,231,218,.28);color:#EDE7DA;
+    font-family:inherit;font-size:12px;letter-spacing:.14em;
+    padding:10px 22px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .obi-account-btn:active{transform:scale(.98);background:rgba(255,255,255,.04);}
+
   /* Powered by WEBON — controlled brand presence in the footer of the obi band */
   .obi-webon{
     margin-top:34px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);
@@ -286,6 +295,58 @@
     font-size:9.5px;letter-spacing:.32em;color:#6f6557;
   }
   .obi-webon b{font-weight:600;color:#A69C8A;letter-spacing:.18em;}
+
+  /* ===== Auth modal (Magic Link) ===== */
+  .auth-modal{
+    position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    opacity:0;pointer-events:none;transition:opacity .25s ease;
+  }
+  .auth-modal.show{opacity:1;pointer-events:auto;}
+  .auth-card{
+    position:relative;width:100%;max-width:380px;background:var(--paper);
+    border-radius:14px;padding:34px 28px 28px;
+    transform:translateY(8px);transition:transform .28s ease;
+    box-shadow:0 18px 50px rgba(0,0,0,.28);
+  }
+  .auth-modal.show .auth-card{transform:translateY(0);}
+  .auth-x{position:absolute;top:8px;right:10px;background:none;border:none;
+    font-size:22px;color:var(--ink-soft);cursor:pointer;width:34px;height:34px;
+    line-height:1;border-radius:50%;}
+  .auth-x:active{background:rgba(0,0,0,.06);}
+  .auth-kicker{
+    font-family:"Jost",sans-serif;font-size:9.5px;letter-spacing:.34em;
+    color:var(--accent);text-align:center;margin-bottom:10px;
+  }
+  .auth-title{
+    font-family:"Zen Maru Gothic",sans-serif;font-size:17px;letter-spacing:.06em;
+    color:var(--ink);text-align:center;margin:0 0 8px;
+  }
+  .auth-sub{
+    font-family:"Zen Maru Gothic",sans-serif;font-size:12.5px;line-height:1.85;
+    color:var(--ink-soft);text-align:center;margin:0 0 22px;
+  }
+  .auth-email{
+    width:100%;box-sizing:border-box;padding:14px 14px;border:1px solid var(--paper-edge);
+    border-radius:10px;font-size:14px;font-family:inherit;background:#FAFAF7;color:var(--ink);
+    outline:none;
+  }
+  .auth-email:focus{border-color:var(--accent);background:#fff;}
+  .auth-send,.auth-logout{
+    width:100%;margin-top:14px;border:none;background:var(--accent);color:#fff;
+    font-family:inherit;font-size:14px;letter-spacing:.06em;
+    padding:14px;border-radius:10px;cursor:pointer;transition:.15s;
+  }
+  .auth-send:active,.auth-logout:active{transform:scale(.98);background:var(--accent-deep);}
+  .auth-send[disabled]{opacity:.5;cursor:not-allowed;}
+  .auth-logout{background:transparent;color:var(--ink);border:1px solid var(--paper-edge);}
+  .auth-logout:active{background:var(--paper-edge);}
+  .auth-status{
+    margin-top:14px;font-size:12px;line-height:1.7;color:var(--ink-soft);
+    text-align:center;font-family:"Zen Maru Gothic",sans-serif;
+  }
+  .auth-status.ok{color:#3F7B45;}
+  .auth-status.err{color:#A9572A;}
 
   /* ===== table of contents ===== */
   .toc{
@@ -636,6 +697,9 @@
         <button class="obi-enter" id="obienter">本文を読みはじめる →</button>
         <button class="obi-resume" id="obiresume" style="display:none;">つづきから読む（<span id="obiresumep">P.2</span>）</button>
         <div class="obi-note">※推薦コメントはサンプルです（本実装時に差し替え）</div>
+        <div class="obi-account">
+          <button class="obi-account-btn" id="accountBtn"><span id="accountLabel">ログイン</span></button>
+        </div>
         <div class="obi-webon">Powered by <b>WEBON</b> ─ WEB本</div>
       </div>
     </section>
@@ -664,6 +728,27 @@
 
     <div class="toast" id="toast"></div>
 
+  </div>
+</div>
+
+<!-- ===== Auth Modal (Magic Link / WEBON) ===== -->
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-card">
+    <button class="auth-x" id="authClose" aria-label="閉じる">×</button>
+    <div id="authStateOut">
+      <div class="auth-kicker">WEBON</div>
+      <h3 class="auth-title">ログイン／新規登録</h3>
+      <p class="auth-sub">パスワード不要。メールアドレスに、ログイン用のリンクをお送りします。</p>
+      <input type="email" class="auth-email" id="authEmail" placeholder="email@example.com" autocomplete="email" inputmode="email">
+      <button class="auth-send" id="authSend">マジックリンクを送る</button>
+      <div class="auth-status" id="authStatus"></div>
+    </div>
+    <div id="authStateIn" style="display:none;">
+      <div class="auth-kicker">WEBON ACCOUNT</div>
+      <h3 class="auth-title">ログイン中</h3>
+      <p class="auth-sub" id="authUserEmail">—</p>
+      <button class="auth-logout" id="authLogout">ログアウト</button>
+    </div>
   </div>
 </div>
 
@@ -1422,6 +1507,85 @@
 
   updateTOCLocks();
   render();
+
+  /* ===== WEBON Auth (Magic Link) ===== */
+  (function setupAuth(){
+    var modal       = el('authModal');
+    var btnAccount  = el('accountBtn');
+    var lblAccount  = el('accountLabel');
+    var btnClose    = el('authClose');
+    var btnSend     = el('authSend');
+    var btnLogout   = el('authLogout');
+    var inpEmail    = el('authEmail');
+    var stStatus    = el('authStatus');
+    var paneOut     = el('authStateOut');
+    var paneIn      = el('authStateIn');
+    var emailLabel  = el('authUserEmail');
+
+    if(!modal || !btnAccount) return;
+
+    function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+    function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); stStatus.textContent=''; stStatus.className='auth-status'; }
+    function showLoggedIn(user){
+      paneOut.style.display='none';
+      paneIn.style.display='';
+      emailLabel.textContent = user.email || '—';
+      lblAccount.textContent = 'アカウント';
+    }
+    function showLoggedOut(){
+      paneOut.style.display='';
+      paneIn.style.display='none';
+      lblAccount.textContent = 'ログイン';
+    }
+
+    btnAccount.addEventListener('click', openModal);
+    btnClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e){ if(e.target===modal) closeModal(); });
+
+    btnSend.addEventListener('click', async function(){
+      var email = (inpEmail.value||'').trim();
+      if(!email || email.indexOf('@')<0){
+        stStatus.textContent = 'メールアドレスを入力してください。';
+        stStatus.className = 'auth-status err'; return;
+      }
+      btnSend.disabled = true;
+      stStatus.textContent = '送信中…';
+      stStatus.className = 'auth-status';
+      var r = await WEBON.signInWithMagicLink(email);
+      btnSend.disabled = false;
+      if(r && r.error){
+        stStatus.textContent = 'エラー：' + (r.error.message || r.error);
+        stStatus.className = 'auth-status err';
+      } else {
+        stStatus.innerHTML = email + ' にログイン用リンクを送信しました。<br>メールを確認して、リンクをクリックしてください。';
+        stStatus.className = 'auth-status ok';
+      }
+    });
+
+    btnLogout.addEventListener('click', async function(){
+      await WEBON.signOut();
+      closeModal();
+    });
+
+    /* 初期状態を反映＋ログイン状態の変更を購読 */
+    if(WEBON.isReady()){
+      WEBON.getUser().then(function(u){ if(u) showLoggedIn(u); else showLoggedOut(); });
+      WEBON.onAuthStateChange(function(user, event){
+        if(user){ showLoggedIn(user); }
+        else { showLoggedOut(); }
+        if(event === 'SIGNED_IN'){
+          // マジックリンクからの戻りなら、モーダルが閉じてもいいよう状態だけ整える
+          if(modal.classList.contains('show')){
+            stStatus.textContent = 'ログインしました。';
+            stStatus.className = 'auth-status ok';
+            setTimeout(closeModal, 900);
+          }
+        }
+      });
+    } else {
+      showLoggedOut();
+    }
+  })();
 })();
 </script>
 </body>

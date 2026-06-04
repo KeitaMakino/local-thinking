@@ -51,11 +51,15 @@
   /* ===== 公開API ================================================= */
   window.WEBON = {
     bookSlug: BOOK_SLUG,
+    isReady: function(){ return ready; },
 
     /* 認証 */
     signInWithMagicLink: async function(email){
-      if(!ready) return {error: "offline"};
-      return await sb.auth.signInWithOtp({ email: email });
+      if(!ready) return {error: {message: "offline"}};
+      return await sb.auth.signInWithOtp({
+        email: email,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname }
+      });
     },
     signOut: async function(){
       if(!ready) return;
@@ -65,6 +69,13 @@
       if(!ready) return null;
       var r = await sb.auth.getUser();
       return r.data ? r.data.user : null;
+    },
+    onAuthStateChange: function(cb){
+      if(!ready){ return { unsubscribe: function(){} }; }
+      var sub = sb.auth.onAuthStateChange(function(event, session){
+        cb(session ? session.user : null, event);
+      });
+      return sub.data ? sub.data.subscription : { unsubscribe: function(){} };
     },
 
     /* 購入状態 */
