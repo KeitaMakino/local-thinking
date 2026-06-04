@@ -854,10 +854,16 @@
   })();
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
 
-  /* ===== access / paywall state ===== */
+  /* ===== access / paywall state =====
+     Supabaseに購入記録があれば true。デモ用フラグ(localStorage)もフォールバックとして残す。
+     isPurchased() は同期で呼ばれるので、refreshPurchasedState() で状態をキャッシュする。 */
   var PURCHASED_KEY = 'lt_purchased';
+  var _purchasedCache = null; // null=unknown, true/false=known via Supabase
   function isPaid(ch){ return ch && ch.id !== 'prologue'; }
-  function isPurchased(){ try{ return localStorage.getItem(PURCHASED_KEY) === '1'; }catch(e){ return false; } }
+  function isPurchased(){
+    if(_purchasedCache === true) return true;
+    try{ return localStorage.getItem(PURCHASED_KEY) === '1'; }catch(e){ return false; }
+  }
   function setPurchased(v){
     try{
       if(v) localStorage.setItem(PURCHASED_KEY,'1');
@@ -865,6 +871,16 @@
     }catch(e){}
   }
   function isLocked(ch){ return isPaid(ch) && !isPurchased(); }
+  async function refreshPurchasedState(){
+    if(!window.WEBON || !WEBON.isReady()){ _purchasedCache = false; return; }
+    try {
+      var p = await WEBON.isPurchased();
+      var prev = _purchasedCache;
+      _purchasedCache = p;
+      if(p) setPurchased(true);
+      if(prev !== p && typeof rebuild === 'function') rebuild();
+    } catch(e){ console.warn('[WEBON] purchase state refresh failed', e); }
+  }
 
   /* ===== data loader =====
      stage 1: book.json (manifest) + comments.json
@@ -1610,7 +1626,10 @@
       toast('（プロトタイプ）イベント参加ページへ遷移します'); return;
     }
     if(e.target.id==='pwbtn'){
-      toast('（プロトタイプ）書籍購入フローへ遷移します'); return;
+      startCheckout(); return;
+    }
+    if(e.target.id==='pwloginbtn'){
+      el('accountBtn').click(); return;
     }
     var sw = e.target.closest('.switch');
     if(sw && sw.id==='notify'){
@@ -1695,6 +1714,56 @@
   updateTOCLocks();
   render();
 
+  /* ===== Stripe Checkout 起動 ===== */
+  async function startCheckout(){
+    if(!window.WEBON || !WEBON.isReady()){ toast('準備中です。少し待ってください'); return; }
+    var user = await WEBON.getUser();
+    if(!user){
+      toast('まずログインしてください');
+      el('accountBtn').click();
+      return;
+    }
+    var token = await WEBON.getAccessToken();
+    if(!token){ toast('セッションエラー、再ログインしてください'); return; }
+    toast('決済画面へ移動します…');
+    try {
+      var r = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token },
+        body: JSON.stringify({ book_slug: WEBON.bookSlug })
+      });
+      var data = await r.json().catch(function(){ return {}; });
+      if(!r.ok){
+        if(r.status === 409){ /* 既購入 */
+          setPurchased(true); _purchasedCache = true; rebuild();
+          toast('すでに購入済みです。本編をご覧いただけます');
+          return;
+        }
+        toast('購入手続きに失敗しました：' + (data.error||r.status));
+        return;
+      }
+      if(data.url) window.location.href = data.url;
+      else toast('Checkout URL を取得できませんでした');
+    } catch(e){
+      console.error(e); toast('通信エラー');
+    }
+  }
+
+  /* 戻り URL のクエリで購入完了を検知 */
+  (function(){
+    var p = new URLSearchParams(window.location.search);
+    if(p.get('purchase') === 'success'){
+      toast('ご購入ありがとうございます。すべての章が読めるようになりました');
+      // webhook側でpurchases行が作られるはず。少し待ってから状態確認。
+      setTimeout(refreshPurchasedState, 1500);
+      // URLからクエリを除去
+      history.replaceState(null, '', window.location.pathname);
+    } else if(p.get('purchase') === 'cancel'){
+      toast('購入をキャンセルしました');
+      history.replaceState(null, '', window.location.pathname);
+    }
+  })();
+
   /* ===== WEBON Auth (Magic Link) ===== */
   (function setupAuth(){
     var modal       = el('authModal');
@@ -1756,10 +1825,13 @@
 
     /* 初期状態を反映＋ログイン状態の変更を購読 */
     if(WEBON.isReady()){
-      WEBON.getUser().then(function(u){ if(u) showLoggedIn(u); else showLoggedOut(); });
+      WEBON.getUser().then(function(u){
+        if(u){ showLoggedIn(u); refreshPurchasedState(); }
+        else { showLoggedOut(); refreshPurchasedState(); }
+      });
       WEBON.onAuthStateChange(function(user, event){
-        if(user){ showLoggedIn(user); }
-        else { showLoggedOut(); }
+        if(user){ showLoggedIn(user); refreshPurchasedState(); }
+        else { showLoggedOut(); _purchasedCache=null; }
         if(event === 'SIGNED_IN'){
           // マジックリンクからの戻りなら、モーダルが閉じてもいいよう状態だけ整える
           if(modal.classList.contains('show')){

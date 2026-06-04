@@ -1,0 +1,10 @@
+{
+  "name": "webon-local-thinking",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WEBON reader site (LOCAL THINKING) — Netlify Functions deps",
+  "dependencies": {
+    "stripe": "^16.0.0",
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

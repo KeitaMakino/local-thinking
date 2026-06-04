@@ -70,6 +70,11 @@
       var r = await sb.auth.getUser();
       return r.data ? r.data.user : null;
     },
+    getAccessToken: async function(){
+      if(!ready) return null;
+      var r = await sb.auth.getSession();
+      return (r.data && r.data.session) ? r.data.session.access_token : null;
+    },
     onAuthStateChange: function(cb){
       if(!ready){ return { unsubscribe: function(){} }; }
       var sub = sb.auth.onAuthStateChange(function(event, session){

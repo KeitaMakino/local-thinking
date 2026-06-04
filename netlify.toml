@@ -1,3 +1,9 @@
 [build]
   publish = "."
   command = ""
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  # 各ファンクションに必要なnpmパッケージ
+  external_node_modules = ["stripe", "@supabase/supabase-js"]
