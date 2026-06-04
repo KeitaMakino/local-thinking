@@ -453,6 +453,34 @@
   .note-item .del:hover{color:var(--accent-deep);}
   .note-empty{font-size:12px;color:var(--ink-soft);text-align:center;padding:18px 0;}
 
+  /* 選択時メモボタン（フローティング） */
+  .sel-memo-btn{
+    position:fixed;z-index:40;display:none;
+    background:var(--ink);color:#fff;border:none;
+    font-family:inherit;font-size:12px;letter-spacing:.06em;
+    padding:8px 16px;border-radius:999px;cursor:pointer;
+    box-shadow:0 5px 18px rgba(0,0,0,.32);
+    user-select:none;
+  }
+  .sel-memo-btn.show{display:block;}
+  .sel-memo-btn::before{content:"✎ ";}
+  /* 引用ブロック（メモ一覧での選択テキスト表示） */
+  .note-item .quote{
+    border-left:3px solid var(--accent);background:rgba(194,107,54,.06);
+    padding:7px 10px;margin:0 0 8px;font-size:12px;line-height:1.7;
+    color:var(--ink-soft);font-family:"Zen Maru Gothic",sans-serif;
+    border-radius:4px;
+  }
+  /* composer内の引用プレビュー */
+  .compose-quote{
+    border-left:3px solid var(--accent);background:rgba(194,107,54,.06);
+    padding:8px 10px;margin:0 0 6px;font-size:12px;line-height:1.65;
+    color:var(--ink);font-family:"Zen Maru Gothic",sans-serif;
+    border-radius:4px;display:flex;gap:8px;align-items:flex-start;
+  }
+  .compose-quote .qtxt{flex:1;}
+  .compose-quote .qclear{background:none;border:none;color:var(--ink-soft);font-size:14px;cursor:pointer;padding:0;}
+
   /* メモFAB（読書画面の角に常駐） */
   .notefab{
     position:fixed;bottom:78px;z-index:30;
@@ -782,6 +810,10 @@
       </div>
       <div class="sh-body" id="shbody"></div>
       <div class="composer" id="noteComposer">
+        <div class="compose-quote" id="composeQuote" style="display:none;">
+          <span class="qtxt" id="composeQuoteText"></span>
+          <button class="qclear" id="composeQuoteClear" type="button" aria-label="引用を外す">×</button>
+        </div>
         <textarea class="note-input" id="noteInput" rows="2" placeholder="このページのメモを残す…"></textarea>
         <div class="note-row">
           <label class="note-vis">
@@ -798,6 +830,9 @@
 
     <!-- FAB: メモ書き込み -->
     <button class="notefab" id="notefab" aria-label="メモ">✎</button>
+
+    <!-- 選択文字列にメモを残すためのフローティングボタン -->
+    <button class="sel-memo-btn" id="selMemoBtn" type="button">この一節にメモ</button>
 
     <div class="toast" id="toast"></div>
 
@@ -1480,7 +1515,9 @@
   /* ===== Notes (Supabase経由) =====
      - 現在のページに紐づくメモ：自分のメモ＋公開メモ
      - page_key: "{chapter_id}:{relIdx}" の形で安定識別
+     - 選択文字列がある場合は quote としても保存
   */
+  var _pendingQuote = null;  // 次に投稿するメモに紐付ける引用
   function currentPageKey(){
     var ch = chapterOf(idx);
     var r = chapterRanges[ch.id];
@@ -1537,8 +1574,10 @@
         myNotes.forEach(function(n){
           var d = document.createElement('div');
           d.className = 'note-item mine';
+          var qh = n.quote ? '<div class="quote">「'+esc(n.quote)+'」</div>' : '';
           d.innerHTML = '<div class="nm">'+(n.is_public?'🌐 公開':'🔒 自分のみ')+'</div>'
                       + '<button class="del" data-id="'+esc(n.id)+'" aria-label="削除">×</button>'
+                      + qh
                       + esc(n.content);
           body.appendChild(d);
         });
@@ -1560,7 +1599,8 @@
         var name = (n.profiles && (n.profiles.pen_name || n.profiles.display_name)) || '匿名';
         var d = document.createElement('div');
         d.className = 'note-item';
-        d.innerHTML = '<div class="nm">'+esc(name)+'</div>'+esc(n.content);
+        var qh = n.quote ? '<div class="quote">「'+esc(n.quote)+'」</div>' : '';
+        d.innerHTML = '<div class="nm">'+esc(name)+'</div>'+qh+esc(n.content);
         body.appendChild(d);
       });
     }
@@ -1570,13 +1610,64 @@
   }
   function openNoteSheet(){
     scrim.classList.add('show'); sheet.classList.add('show');
+    /* composer内の引用プレビューを更新 */
+    var cq = el('composeQuote'), cqt = el('composeQuoteText');
+    if(_pendingQuote){
+      cqt.textContent = '「'+_pendingQuote+'」';
+      cq.style.display = '';
+    } else {
+      cq.style.display = 'none';
+    }
     renderNoteSheet();
   }
   function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
   scrim.addEventListener('click',closeSheet);
 
-  /* FAB → メモを開く */
-  el('notefab').addEventListener('click', openNoteSheet);
+  /* FAB → メモを開く（pendingQuoteはクリア＝純粋なページメモ） */
+  el('notefab').addEventListener('click', function(){
+    _pendingQuote = null;
+    openNoteSheet();
+  });
+
+  /* ===== 選択文字列にメモを残す ===== */
+  var selMemoBtn = el('selMemoBtn');
+  function isInProse(node){
+    if(!node) return false;
+    var el2 = node.nodeType === 1 ? node : node.parentElement;
+    return !!(el2 && el2.closest && el2.closest('.prose,.ptitle,.outro,.ch-onlyhere,.sec-head'));
+  }
+  function updateSelMemoBtn(){
+    var sel = window.getSelection();
+    if(!sel || sel.isCollapsed){ selMemoBtn.classList.remove('show'); return; }
+    var text = (sel.toString()||'').trim();
+    if(text.length < 2 || text.length > 800){ selMemoBtn.classList.remove('show'); return; }
+    /* 選択範囲が本文系の要素内であることを確認 */
+    var anc = sel.anchorNode, foc = sel.focusNode;
+    if(!isInProse(anc) || !isInProse(foc)){ selMemoBtn.classList.remove('show'); return; }
+    /* ボタンの位置：選択範囲の上辺中央 */
+    var range = sel.getRangeAt(0);
+    var rect = range.getBoundingClientRect();
+    if(!rect || !rect.width){ selMemoBtn.classList.remove('show'); return; }
+    var top = Math.max(8, rect.top - 44);
+    var left = Math.min(Math.max(8, rect.left + rect.width/2 - 80), window.innerWidth - 168);
+    selMemoBtn.style.top = top + 'px';
+    selMemoBtn.style.left = left + 'px';
+    selMemoBtn.classList.add('show');
+  }
+  document.addEventListener('selectionchange', updateSelMemoBtn);
+  document.addEventListener('mouseup', updateSelMemoBtn);
+  document.addEventListener('touchend', function(){ setTimeout(updateSelMemoBtn, 60); });
+
+  selMemoBtn.addEventListener('click', function(){
+    var sel = window.getSelection();
+    var text = sel ? (sel.toString()||'').trim() : '';
+    if(!text){ return; }
+    _pendingQuote = text;
+    selMemoBtn.classList.remove('show');
+    /* 選択を解除（ボタンが消える） */
+    try{ sel.removeAllRanges(); }catch(e){}
+    openNoteSheet();
+  });
 
   /* 削除ボタン（自分のメモ） */
   el('shbody').addEventListener('click', async function(e){
@@ -1592,14 +1683,15 @@
     }
   });
 
-  /* 投稿 */
+  /* 投稿（quote付きの場合は紐付けて保存） */
   el('noteSend').addEventListener('click', async function(){
     var content = (el('noteInput').value||'').trim();
     if(!content) return;
     var isPub = el('notePublic').checked;
     var pk = currentPageKey();
+    var quote = _pendingQuote;  // この投稿で紐付ける引用
     el('noteSend').disabled = true;
-    var r = await WEBON.saveNote(pk, content, isPub);
+    var r = await WEBON.saveNote(pk, content, isPub, quote);
     el('noteSend').disabled = false;
     if(r && r.error){
       toast('保存できませんでした：' + (r.error.message || ''));
@@ -1607,8 +1699,15 @@
     }
     el('noteInput').value = '';
     el('notePublic').checked = false;
+    _pendingQuote = null;
+    el('composeQuote').style.display = 'none';
     toast(isPub ? '公開メモを投稿しました' : 'メモを保存しました');
     renderNoteSheet();
+  });
+  /* 引用プレビューの×ボタン：このメモから引用を外す */
+  el('composeQuoteClear').addEventListener('click', function(){
+    _pendingQuote = null;
+    el('composeQuote').style.display = 'none';
   });
 
   /* ログイン誘導リンク */

@@ -124,14 +124,16 @@
               .order('created_at', { ascending: false });
       return r.data || [];
     },
-    saveNote: async function(pageKey, content, isPublic){
+    saveNote: async function(pageKey, content, isPublic, quote){
       if(!ready) return {error: {message:"offline"}};
       var u = await this.getUser();
       if(!u) return {error: {message:"not_signed_in"}};
       var bookId = await this.getBookId();
       return await sb.from('notes').insert({
         user_id: u.id, book_id: bookId,
-        page_key: pageKey, content: content, is_public: !!isPublic
+        page_key: pageKey, content: content,
+        is_public: !!isPublic,
+        quote: quote || null
       });
     },
     deleteNote: async function(noteId){
