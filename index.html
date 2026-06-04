@@ -849,6 +849,14 @@
       if(cover) cover.classList.add('cover-revealed');
       setTimeout(function(){ if(opener && opener.parentNode) opener.parentNode.removeChild(opener); }, 1500);
     };
+    /* 外から早送りできるよう公開（決済戻り等） */
+    window._dismissOpener = dismiss;
+    /* 決済戻り(?purchase=success)時はオープニングをスキップ */
+    var _q = new URLSearchParams(window.location.search);
+    if(_q.get('purchase') === 'success' || _q.get('purchase') === 'cancel'){
+      dismiss();
+      return;
+    }
     setTimeout(dismiss, 3400);
     opener.addEventListener('click', dismiss, {once:true});
   })();
