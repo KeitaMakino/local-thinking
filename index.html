@@ -178,8 +178,28 @@
   .cv-screen{position:relative;width:100%;height:100%;overflow:hidden;}
   .cv-photo{
     position:absolute;inset:0;z-index:1;background-color:#6c97b5;
-    background-image:url("images/top.png");
+    background-image:url("images/top.webp");
     background-size:cover;background-position:center;background-repeat:no-repeat;
+  }
+
+  /* ===== オープニングスプラッシュ（LOCAL THINKINGロゴアニメ） ===== */
+  .opener{
+    position:fixed;inset:0;z-index:9999;background:var(--sea);
+    display:flex;align-items:center;justify-content:center;
+    opacity:1;transition:opacity .55s ease;
+    pointer-events:auto;
+  }
+  .opener.gone{opacity:0;pointer-events:none;}
+  .opener-logo{
+    /* 表紙のLOCAL THINKINGとほぼ同じ実寸（表紙では画面幅の約65%） */
+    width:65%;max-width:480px;height:auto;display:block;
+    filter:drop-shadow(0 4px 22px rgba(0,0,0,.22));
+    opacity:0;transform:scale(.97);
+    animation:openerLogoIn 1.0s cubic-bezier(.2,.7,.2,1) .15s forwards;
+  }
+  @keyframes openerLogoIn{
+    from{opacity:0;transform:scale(.97);}
+    to{opacity:1;transform:scale(1);}
   }
   /* メニュー／SCROLL は撤去。表紙は top.png 一枚。下スクロールで obi に到達できる。 */
   .cv-mark{position:absolute;left:12%;bottom:9%;z-index:6;display:none;align-items:center;gap:6px;
@@ -509,6 +529,11 @@
 </head>
 <body class="cover">
 
+<!-- ===== OPENING SPLASH (LOCAL THINKING ロゴアニメ) ===== -->
+<div class="opener" id="opener" aria-hidden="true">
+  <img class="opener-logo" src="images/logo_main.png" alt="LOCAL THINKING">
+</div>
+
 <div class="phone">
   <div class="screen" id="screen">
 
@@ -592,6 +617,21 @@
 (async function(){
   "use strict";
   function el(id){ return document.getElementById(id); }
+
+  /* ===== オープニングスプラッシュの終了 ===== */
+  /* ロゴアニメ（フェードイン 0.15→1.15s）＋ 静止 1.0s → フェードアウト 0.55s */
+  (function(){
+    var opener = document.getElementById('opener');
+    if(!opener) return;
+    var dismiss = function(){
+      opener.classList.add('gone');
+      setTimeout(function(){ if(opener && opener.parentNode) opener.parentNode.removeChild(opener); }, 700);
+    };
+    /* 2.1秒後にフェードアウト開始 → 約2.7秒で完全消去 */
+    setTimeout(dismiss, 2100);
+    /* タップで早送りも可能に */
+    opener.addEventListener('click', dismiss, {once:true});
+  })();
   function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
 
   /* ===== access / paywall state ===== */
