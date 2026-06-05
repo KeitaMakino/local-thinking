@@ -75,6 +75,11 @@
   }
   /* 縦書きの本文ページ：左padding=0で左端まで使い切る。右側もタイトに。 */
   body.vert .page{padding-left:0;padding-right:28px;}
+  /* ただしタイトル/章カバー/セクションカバーは中央寄せレイアウトなので、左右パディングを揃える */
+  body.vert .page:has(.page-vignette),
+  body.vert .page:has(.ch-cover),
+  body.vert .page:has(.ch-intro),
+  body.vert .page:has(.sec-page){padding-left:32px;padding-right:32px;}
   /* タイトルページのみ中央寄せ（ヒーローコピー用） */
   .page:has(.page-vignette){justify-content:center;}
   .page::-webkit-scrollbar{display:none;}
@@ -1176,6 +1181,7 @@
         var cls = [];
         if(pp.cont) cls.push('cont');
         if(pp.lead) cls.push('lead');
+        if(pp.outro) cls.push('outro-line');
         if(cls.length) p.className = cls.join(' ');
         p.textContent = pp.text;
         prose.appendChild(p);
