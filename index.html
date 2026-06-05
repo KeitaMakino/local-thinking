@@ -527,6 +527,8 @@
   }
   .notefab:active{transform:scale(.94);}
   body.cover .notefab{display:none;}
+  /* 選択中の時はマーカーモード表示 */
+  .notefab.mode-mark{background:#E2A445;}
   /* 縦書きでは右が文字の始まり。FABを左下に置いて本文に被らないように */
   body.vert .notefab{right:auto;left:14px;}
 
@@ -874,8 +876,8 @@
     <!-- FAB: メモ書き込み -->
     <button class="notefab" id="notefab" aria-label="メモ">✎</button>
 
-    <!-- 選択文字列にマーカーを付けるフローティングボタン -->
-    <button class="sel-memo-btn" id="selMemoBtn" type="button">マーカーを付ける</button>
+    <!-- 旧: 選択フローティングボタン (iOS選択メニューと衝突するため廃止。FABが兼ねる) -->
+    <button class="sel-memo-btn" id="selMemoBtn" type="button" style="display:none;">マーカーを付ける</button>
 
     <div class="toast" id="toast"></div>
 
@@ -1819,72 +1821,66 @@
   function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
   scrim.addEventListener('click',closeSheet);
 
-  /* FAB → メモを開く（pendingQuoteはクリア＝純粋なページメモ） */
+  /* FAB → 選択中ならマーカー、なければメモシートを開く */
   el('notefab').addEventListener('click', function(){
+    var v = _currentValidSelection();
+    if(v){ _saveSelectionAsMarker(v); return; }
     _pendingQuote = null;
     openNoteSheet();
   });
 
-  /* ===== 選択文字列にメモを残す ===== */
-  var selMemoBtn = el('selMemoBtn');
+  /* ===== 選択文字列にマーカー =====
+     iOS Safari の選択メニューと競合しないよう、独立ボタンは置かない。
+     右下FAB(✎)が「選択中ならマーカー、なければ notes 開く」を兼ねる。 */
   function isInProse(node){
     if(!node) return false;
     var el2 = node.nodeType === 1 ? node : node.parentElement;
     return !!(el2 && el2.closest && el2.closest('.prose,.ptitle,.outro,.ch-onlyhere,.sec-head'));
   }
-  function updateSelMemoBtn(){
+  function _currentValidSelection(){
     var sel = window.getSelection();
-    if(!sel || sel.isCollapsed){ selMemoBtn.classList.remove('show'); return; }
+    if(!sel || sel.isCollapsed) return null;
     var text = (sel.toString()||'').trim();
-    if(text.length < 2 || text.length > 800){ selMemoBtn.classList.remove('show'); return; }
-    /* 選択範囲が本文系の要素内であることを確認 */
-    var anc = sel.anchorNode, foc = sel.focusNode;
-    if(!isInProse(anc) || !isInProse(foc)){ selMemoBtn.classList.remove('show'); return; }
-    var range = sel.getRangeAt(0);
-    var rect = range.getBoundingClientRect();
-    if(!rect || !rect.width){ selMemoBtn.classList.remove('show'); return; }
-    /* iOS/Safariのコピー・Google検索メニューは選択範囲の上に出るため、
-       こちらは下に置いて競合を避ける。下に置けない場合（最下部ぴったり）は上に戻す */
-    var btnH = 38; var gap = 12;
-    var top = rect.bottom + gap;
-    if(top + btnH > window.innerHeight - 70){
-      top = Math.max(8, rect.top - (btnH + gap));
-    }
-    var left = Math.min(Math.max(8, rect.left + rect.width/2 - 80), window.innerWidth - 168);
-    selMemoBtn.style.top = top + 'px';
-    selMemoBtn.style.left = left + 'px';
-    selMemoBtn.classList.add('show');
+    if(text.length < 2 || text.length > 800) return null;
+    if(!isInProse(sel.anchorNode) || !isInProse(sel.focusNode)) return null;
+    return { sel: sel, text: text };
   }
-  document.addEventListener('selectionchange', updateSelMemoBtn);
-  document.addEventListener('mouseup', updateSelMemoBtn);
-  document.addEventListener('touchend', function(){ setTimeout(updateSelMemoBtn, 60); });
+  /* FABの見た目を選択状態に応じて変える */
+  var notefabEl = el('notefab');
+  function updateFabForSelection(){
+    var v = _currentValidSelection();
+    if(v){
+      notefabEl.textContent = '🖍';
+      notefabEl.classList.add('mode-mark');
+      notefabEl.setAttribute('aria-label', 'マーカーを付ける');
+    } else {
+      notefabEl.textContent = '✎';
+      notefabEl.classList.remove('mode-mark');
+      notefabEl.setAttribute('aria-label', 'メモ');
+    }
+  }
+  document.addEventListener('selectionchange', updateFabForSelection);
+  document.addEventListener('mouseup', updateFabForSelection);
+  document.addEventListener('touchend', function(){ setTimeout(updateFabForSelection, 60); });
 
-  selMemoBtn.addEventListener('click', async function(){
-    var sel = window.getSelection();
-    var text = sel ? (sel.toString()||'').trim() : '';
-    if(!text){ return; }
+  /* マーカー保存処理（FABのhandlerから呼ばれる） */
+  async function _saveSelectionAsMarker(v){
     if(!WEBON.isReady()){ toast('準備中です'); return; }
     var user = await WEBON.getUser();
     if(!user){ toast('まずログインしてください'); el('accountBtn').click(); return; }
 
-    /* 選択範囲の Range を、解除する前に確保しておく（即時ハイライトに使う） */
     var savedRange = null;
-    try { if(sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange(); } catch(e){}
+    try { if(v.sel.rangeCount > 0) savedRange = v.sel.getRangeAt(0).cloneRange(); } catch(e){}
+    try{ v.sel.removeAllRanges(); }catch(e){}
 
-    selMemoBtn.classList.remove('show');
-    try{ sel.removeAllRanges(); }catch(e){}
-
-    /* まず楽観的にハイライト（DB待たずに即反映） */
     if(savedRange){
       try { _wrapRangeAsMarker(savedRange, '_pending', false); } catch(e){}
     }
 
-    /* マーカーをDB保存（contentは空、quoteのみ） */
     var pk = currentPageKey();
-    var r = await WEBON.saveNote(pk, '', false, text);
+    var r = await WEBON.saveNote(pk, '', false, v.text);
     if(r && r.error){
       toast('保存できませんでした：' + (r.error.message||''));
-      /* 楽観的ハイライトを解除 */
       var fake = document.querySelector('.marker-hl[data-note-id="_pending"]');
       if(fake){
         var t = document.createTextNode(fake.textContent);
@@ -1892,13 +1888,11 @@
       }
       return;
     }
-    /* 楽観的ハイライトに正しいIDを反映 */
     var fake2 = document.querySelector('.marker-hl[data-note-id="_pending"]');
     if(fake2 && r.data){ fake2.dataset.noteId = r.data.id; }
     toast('マーカーを付けました');
-    /* note sheet は自動で開かない（マーカー単体で完結）。
-       メモを書きたい時はマーカーをタップでシートが開く。 */
-  });
+    updateFabForSelection();
+  }
 
   /* ===== 自分のマーカーを本文に適用 ===== */
   function _findTextRangeInNode(rootNode, needle){

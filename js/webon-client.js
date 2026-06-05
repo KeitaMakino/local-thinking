@@ -68,7 +68,9 @@
     _cachedUser: null,
     getUser: async function(){
       if(!ready) return null;
-      /* localStorageのセッションから即取得（モバイルの一時的なネットワーク不調でもOK） */
+      /* キャッシュを最優先（onAuthStateChangeで常に最新化されている） */
+      if(this._cachedUser) return this._cachedUser;
+      /* localStorageセッションから即取得 */
       try {
         var s = await sb.auth.getSession();
         if(s.data && s.data.session && s.data.session.user){
@@ -76,10 +78,13 @@
           return s.data.session.user;
         }
       } catch(e) {}
-      var r = await sb.auth.getUser();
-      var u = r.data ? r.data.user : null;
-      this._cachedUser = u;
-      return u;
+      /* 最後の手段：サーバへ問い合わせ */
+      try {
+        var r = await sb.auth.getUser();
+        var u = r.data ? r.data.user : null;
+        this._cachedUser = u;
+        return u;
+      } catch(e) { return null; }
     },
     getAccessToken: async function(){
       if(!ready) return null;
