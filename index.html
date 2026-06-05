@@ -475,22 +475,28 @@
   .sel-memo-btn.show{display:block;}
   .sel-memo-btn::before{content:"🖍 ";}
 
-  /* 本文中のマーカー（自分が付けたハイライト） */
+  /* 本文中のマーカー（自分が付けたハイライト）
+     横書き：文字の下半分に色（下線風）
+     縦書き：文字の右側に色（縦書きの「圏点」の位置に相当） */
   .marker-hl{
-    background:linear-gradient(transparent 55%, rgba(231,170,84,.42) 55%);
+    background:linear-gradient(transparent 60%, rgba(231,170,84,.45) 60%);
     cursor:pointer;border-radius:2px;
     transition:background .15s;
   }
   .marker-hl.has-note{
-    background:linear-gradient(transparent 55%, rgba(194,107,54,.5) 55%);
+    background:linear-gradient(transparent 60%, rgba(194,107,54,.55) 60%);
   }
-  .marker-hl:hover{background:linear-gradient(transparent 50%, rgba(194,107,54,.55) 50%);}
-  /* 縦書きではテキスト方向が違うのでlinear-gradientの向きを反転 */
+  .marker-hl:hover{
+    background:linear-gradient(transparent 55%, rgba(194,107,54,.6) 55%);
+  }
   body.vert .marker-hl{
-    background:linear-gradient(to left, transparent 55%, rgba(231,170,84,.42) 55%);
+    background:linear-gradient(to right, transparent 62%, rgba(231,170,84,.45) 62%);
   }
   body.vert .marker-hl.has-note{
-    background:linear-gradient(to left, transparent 55%, rgba(194,107,54,.5) 55%);
+    background:linear-gradient(to right, transparent 62%, rgba(194,107,54,.55) 62%);
+  }
+  body.vert .marker-hl:hover{
+    background:linear-gradient(to right, transparent 56%, rgba(194,107,54,.6) 56%);
   }
   /* 引用ブロック（メモ一覧での選択テキスト表示） */
   .note-item .quote{
@@ -1856,22 +1862,37 @@
     var user = await WEBON.getUser();
     if(!user){ toast('まずログインしてください'); el('accountBtn').click(); return; }
 
+    /* 選択範囲の Range を、解除する前に確保しておく（即時ハイライトに使う） */
+    var savedRange = null;
+    try { if(sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange(); } catch(e){}
+
     selMemoBtn.classList.remove('show');
     try{ sel.removeAllRanges(); }catch(e){}
+
+    /* まず楽観的にハイライト（DB待たずに即反映） */
+    if(savedRange){
+      try { _wrapRangeAsMarker(savedRange, '_pending', false); } catch(e){}
+    }
 
     /* マーカーをDB保存（contentは空、quoteのみ） */
     var pk = currentPageKey();
     var r = await WEBON.saveNote(pk, '', false, text);
     if(r && r.error){
-      toast('マーカーを保存できませんでした：' + (r.error.message||''));
+      toast('保存できませんでした：' + (r.error.message||''));
+      /* 楽観的ハイライトを解除 */
+      var fake = document.querySelector('.marker-hl[data-note-id="_pending"]');
+      if(fake){
+        var t = document.createTextNode(fake.textContent);
+        fake.parentNode.replaceChild(t, fake);
+      }
       return;
     }
+    /* 楽観的ハイライトに正しいIDを反映 */
+    var fake2 = document.querySelector('.marker-hl[data-note-id="_pending"]');
+    if(fake2 && r.data){ fake2.dataset.noteId = r.data.id; }
     toast('マーカーを付けました');
-    /* 本文にハイライトを適用 */
-    applyMarkersToCurrentPage();
-    /* 続いてメモを書きたい人のために、quote付きでcomposerを開く */
-    _pendingQuote = text;
-    openNoteSheet();
+    /* note sheet は自動で開かない（マーカー単体で完結）。
+       メモを書きたい時はマーカーをタップでシートが開く。 */
   });
 
   /* ===== 自分のマーカーを本文に適用 ===== */

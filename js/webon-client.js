@@ -65,10 +65,21 @@
       if(!ready) return;
       await sb.auth.signOut();
     },
+    _cachedUser: null,
     getUser: async function(){
       if(!ready) return null;
+      /* localStorageのセッションから即取得（モバイルの一時的なネットワーク不調でもOK） */
+      try {
+        var s = await sb.auth.getSession();
+        if(s.data && s.data.session && s.data.session.user){
+          this._cachedUser = s.data.session.user;
+          return s.data.session.user;
+        }
+      } catch(e) {}
       var r = await sb.auth.getUser();
-      return r.data ? r.data.user : null;
+      var u = r.data ? r.data.user : null;
+      this._cachedUser = u;
+      return u;
     },
     getAccessToken: async function(){
       if(!ready) return null;
@@ -77,7 +88,9 @@
     },
     onAuthStateChange: function(cb){
       if(!ready){ return { unsubscribe: function(){} }; }
+      var self = this;
       var sub = sb.auth.onAuthStateChange(function(event, session){
+        self._cachedUser = session ? session.user : null;
         cb(session ? session.user : null, event);
       });
       return sub.data ? sub.data.subscription : { unsubscribe: function(){} };
@@ -126,7 +139,7 @@
     },
     saveNote: async function(pageKey, content, isPublic, quote){
       if(!ready) return {error: {message:"offline"}};
-      var u = await this.getUser();
+      var u = this._cachedUser || await this.getUser();
       if(!u) return {error: {message:"not_signed_in"}};
       var bookId = await this.getBookId();
       return await sb.from('notes').insert({
@@ -134,7 +147,7 @@
         page_key: pageKey, content: content,
         is_public: !!isPublic,
         quote: quote || null
-      });
+      }).select().single();
     },
     deleteNote: async function(noteId){
       if(!ready) return {error:{message:"offline"}};
