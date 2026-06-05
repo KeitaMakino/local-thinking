@@ -1113,8 +1113,153 @@
       case 'paywall':     return renderPaywall();
       case 'outro':       return renderOutro(b);
       case 'toc-preview': return renderTocPreview(b);
+      case 'prose-flow':  /* 通常はexpandAllFlows()でprose複数ページに展開済み。
+                              ここに来るのはfallback（その場合はそのままproseとして表示） */
+                          return renderProse(b);
       default: return '';
     }
+  }
+
+  /* ===== ランタイム・ページネーション =====
+     端末の実viewportで「prose-flow」ブロックを段落・文の単位で測って収まるところまで詰める。
+     書き分け：縦書きは prose.scrollWidth、横書きは scrollHeight が overflow 判定軸。
+  */
+  function _splitSentencesJP(text){
+    var out = [], cur = '';
+    for(var i=0;i<text.length;i++){
+      cur += text[i];
+      if(text[i]==='。'){ out.push(cur); cur=''; }
+    }
+    if(cur) out.push(cur);
+    return out;
+  }
+  /* prose-flow を実測ベースで複数の prose ページに展開する */
+  function _paginateProseFlow(paragraphs){
+    /* 計測用の隠しページを作って同じ.pageスタイルを当てる */
+    var vp = el('viewport');
+    var measure = document.createElement('section');
+    measure.className = 'page';
+    measure.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden;pointer-events:none;';
+    if(vp){
+      measure.style.width = vp.clientWidth + 'px';
+      measure.style.height = vp.clientHeight + 'px';
+    }
+    document.body.appendChild(measure);
+    var prose = document.createElement('div');
+    prose.className = 'prose mincho';
+    measure.appendChild(prose);
+
+    function setParas(paras){
+      prose.innerHTML = '';
+      paras.forEach(function(pp){
+        var p = document.createElement('p');
+        var cls = [];
+        if(pp.cont) cls.push('cont');
+        if(pp.lead) cls.push('lead');
+        if(cls.length) p.className = cls.join(' ');
+        p.textContent = pp.text;
+        prose.appendChild(p);
+      });
+    }
+    function fits(paras){
+      setParas(paras);
+      var vert = document.body.classList.contains('vert');
+      if(vert) return prose.scrollWidth <= prose.clientWidth + 2;
+      return prose.scrollHeight <= prose.clientHeight + 2;
+    }
+
+    var pages = [];
+    var cur = [];
+    var contFromPrev = false;
+    var isFirstGlobal = true;
+
+    for(var i=0;i<paragraphs.length;i++){
+      var origText = paragraphs[i].text || '';
+      if(!origText) continue;
+      var remaining = origText;
+      var contFlag = contFromPrev;
+      contFromPrev = false;
+
+      while(remaining){
+        var trial = cur.concat([{ text: remaining, cont: contFlag, lead: isFirstGlobal }]);
+        if(fits(trial)){
+          cur = trial; remaining = ''; isFirstGlobal = false; break;
+        }
+        var sentences = _splitSentencesJP(remaining);
+        if(sentences.length === 0) sentences = [remaining];
+
+        /* 二分探索：何文まで現ページに収まるか */
+        var lo = 1, hi = sentences.length, best = 0;
+        while(lo <= hi){
+          var mid = (lo + hi) >> 1;
+          var chunk = sentences.slice(0, mid).join('');
+          var trial2 = cur.concat([{ text: chunk, cont: contFlag, lead: isFirstGlobal }]);
+          if(fits(trial2)){ best = mid; lo = mid + 1; } else { hi = mid - 1; }
+        }
+        if(best > 0){
+          cur.push({ text: sentences.slice(0, best).join(''), cont: contFlag, lead: isFirstGlobal });
+          isFirstGlobal = false;
+          pages.push(cur); cur = [];
+          remaining = sentences.slice(best).join('');
+          contFlag = true; contFromPrev = true;
+        } else {
+          if(cur.length > 0){
+            pages.push(cur); cur = [];
+            /* retry with empty page */
+          } else {
+            /* 1文すら空ページに入らない → 強制的に詰める */
+            cur.push({ text: sentences[0], cont: contFlag, lead: isFirstGlobal });
+            isFirstGlobal = false;
+            pages.push(cur); cur = [];
+            remaining = sentences.slice(1).join('');
+            contFlag = true; contFromPrev = true;
+          }
+        }
+      }
+    }
+    if(cur.length > 0) pages.push(cur);
+
+    measure.remove();
+    return pages;
+  }
+
+  /* BOOK 構造を「flow」を実ページに展開した新構造に変換する */
+  function _expandFlowInChapter(ch){
+    function expandPages(rawPages){
+      var out = [];
+      rawPages.forEach(function(page){
+        var blocks = page.blocks || [];
+        var flow = null;
+        var others = [];
+        blocks.forEach(function(b){
+          if(b.type === 'prose-flow' && !flow) flow = b;
+          else others.push(b);
+        });
+        if(!flow){ out.push(page); return; }
+        var subs = _paginateProseFlow(flow.paragraphs || []);
+        subs.forEach(function(paras, idx){
+          var newBlocks = [{ type: 'prose', paragraphs: paras }];
+          if(idx === subs.length - 1){
+            /* 最後のサブページに、prose以外のブロック(outroなど)を載せる */
+            newBlocks = newBlocks.concat(others);
+          }
+          out.push({ blocks: newBlocks, if: page.if });
+        });
+      });
+      return out;
+    }
+    if(ch.pages){
+      ch._pages_expanded = expandPages(ch.pages);
+    }
+    if(ch.sections){
+      ch.sections.forEach(function(s){
+        if(s.pages){ s._pages_expanded = expandPages(s.pages); }
+      });
+    }
+  }
+  function expandAllFlows(){
+    if(!Array.isArray(BOOK)) return;
+    BOOK.forEach(_expandFlowInChapter);
   }
 
   /* ===== build all chapter pages into strip =====
@@ -1129,8 +1274,9 @@
       /* 未購入の場合は、prologue（ペイウォールを含む）までしか strip に出さない。
          以降の章はアクセス不可。購入状態が変わるとrebuild()で再描画される。 */
       if(isLocked(ch)) continue;
-      if(ch.pages && ch.pages.length){
-        ch.pages.forEach(function(page){
+      var chPages = ch._pages_expanded || ch.pages;
+      if(chPages && chPages.length){
+        chPages.forEach(function(page){
           /* 条件付きページ：page.if === "unpurchased" は、未購入の時だけ出す */
           if(page.if === 'unpurchased' && isPurchased()) return;
           html += '<section class="page" data-chapter="'+esc(ch.id)+'">';
@@ -1166,7 +1312,8 @@
                   +   '<div class="sec-no">'+esc(s.no)+'</div>'
                   +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
                   + '</div></section>';
-            s.pages.forEach(function(page){
+            var sPages = s._pages_expanded || s.pages;
+            sPages.forEach(function(page){
               html += '<section class="page" data-chapter="'+esc(ch.id)+'">';
               (page.blocks||[]).forEach(function(b){ html += renderBlock(b); });
               html += '</section>';
@@ -1217,6 +1364,7 @@
          + '</button>';
     body.innerHTML = rows;
   }
+  try { expandAllFlows(); } catch(e){ console.warn('[WEBON] expand flows failed', e); }
   buildAllChapters();
   renderToc();
 
@@ -1792,6 +1940,8 @@
 
   /* ===== rebuild: strip内容＋TOCロック＋ページインデックス再生成 ===== */
   function rebuild(){
+    /* 実測ベースの prose-flow 展開を最新化。書字方向やviewportサイズに応じて再計算。 */
+    try { expandAllFlows(); } catch(e){ console.warn('[WEBON] expand flows failed', e); }
     buildAllChapters();
     indexPages();
     updateTOCLocks();
