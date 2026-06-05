@@ -455,6 +455,8 @@
   }
   .note-item .del:hover{color:var(--accent-deep);}
   .note-empty{font-size:12px;color:var(--ink-soft);text-align:center;padding:18px 0;}
+  .note-empty-inline{font-size:11.5px;color:var(--ink-soft);font-style:italic;}
+  .note-item.focused{box-shadow:0 0 0 2px var(--accent);transition:box-shadow .25s;}
 
   /* 選択時メモボタン（フローティング） */
   .sel-memo-btn{
@@ -466,7 +468,25 @@
     user-select:none;
   }
   .sel-memo-btn.show{display:block;}
-  .sel-memo-btn::before{content:"✎ ";}
+  .sel-memo-btn::before{content:"🖍 ";}
+
+  /* 本文中のマーカー（自分が付けたハイライト） */
+  .marker-hl{
+    background:linear-gradient(transparent 55%, rgba(231,170,84,.42) 55%);
+    cursor:pointer;border-radius:2px;
+    transition:background .15s;
+  }
+  .marker-hl.has-note{
+    background:linear-gradient(transparent 55%, rgba(194,107,54,.5) 55%);
+  }
+  .marker-hl:hover{background:linear-gradient(transparent 50%, rgba(194,107,54,.55) 50%);}
+  /* 縦書きではテキスト方向が違うのでlinear-gradientの向きを反転 */
+  body.vert .marker-hl{
+    background:linear-gradient(to left, transparent 55%, rgba(231,170,84,.42) 55%);
+  }
+  body.vert .marker-hl.has-note{
+    background:linear-gradient(to left, transparent 55%, rgba(194,107,54,.5) 55%);
+  }
   /* 引用ブロック（メモ一覧での選択テキスト表示） */
   .note-item .quote{
     border-left:3px solid var(--accent);background:rgba(194,107,54,.06);
@@ -843,8 +863,8 @@
     <!-- FAB: メモ書き込み -->
     <button class="notefab" id="notefab" aria-label="メモ">✎</button>
 
-    <!-- 選択文字列にメモを残すためのフローティングボタン -->
-    <button class="sel-memo-btn" id="selMemoBtn" type="button">この一節にメモ</button>
+    <!-- 選択文字列にマーカーを付けるフローティングボタン -->
+    <button class="sel-memo-btn" id="selMemoBtn" type="button">マーカーを付ける</button>
 
     <div class="toast" id="toast"></div>
 
@@ -1735,11 +1755,14 @@
         myNotes.forEach(function(n){
           var d = document.createElement('div');
           d.className = 'note-item mine';
+          d.dataset.noteId = n.id;
           var qh = n.quote ? '<div class="quote">「'+esc(n.quote)+'」</div>' : '';
-          d.innerHTML = '<div class="nm">'+(n.is_public?'🌐 公開':'🔒 自分のみ')+'</div>'
+          var contentDisplay = n.content ? esc(n.content) : '<span class="note-empty-inline">（メモなしのマーカー）</span>';
+          var visTag = n.is_public ? '🌐 公開' : (n.quote && !n.content ? '🖍 マーカー' : '🔒 自分のみ');
+          d.innerHTML = '<div class="nm">'+visTag+'</div>'
                       + '<button class="del" data-id="'+esc(n.id)+'" aria-label="削除">×</button>'
                       + qh
-                      + esc(n.content);
+                      + contentDisplay;
           body.appendChild(d);
         });
       }
@@ -1819,16 +1842,146 @@
   document.addEventListener('mouseup', updateSelMemoBtn);
   document.addEventListener('touchend', function(){ setTimeout(updateSelMemoBtn, 60); });
 
-  selMemoBtn.addEventListener('click', function(){
+  selMemoBtn.addEventListener('click', async function(){
     var sel = window.getSelection();
     var text = sel ? (sel.toString()||'').trim() : '';
     if(!text){ return; }
-    _pendingQuote = text;
+    if(!WEBON.isReady()){ toast('準備中です'); return; }
+    var user = await WEBON.getUser();
+    if(!user){ toast('まずログインしてください'); el('accountBtn').click(); return; }
+
     selMemoBtn.classList.remove('show');
-    /* 選択を解除（ボタンが消える） */
     try{ sel.removeAllRanges(); }catch(e){}
+
+    /* マーカーをDB保存（contentは空、quoteのみ） */
+    var pk = currentPageKey();
+    var r = await WEBON.saveNote(pk, '', false, text);
+    if(r && r.error){
+      toast('マーカーを保存できませんでした：' + (r.error.message||''));
+      return;
+    }
+    toast('マーカーを付けました');
+    /* 本文にハイライトを適用 */
+    applyMarkersToCurrentPage();
+    /* 続いてメモを書きたい人のために、quote付きでcomposerを開く */
+    _pendingQuote = text;
     openNoteSheet();
   });
+
+  /* ===== 自分のマーカーを本文に適用 ===== */
+  function _findTextRangeInNode(rootNode, needle){
+    /* TreeWalkerで部分文字列を探し、Rangeを返す。改行・複数ノードに跨ってもOK */
+    if(!needle) return null;
+    var walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT, null);
+    var fullText = '';
+    var nodes = [];
+    var offsets = [];
+    var node;
+    while((node = walker.nextNode())){
+      offsets.push(fullText.length);
+      nodes.push(node);
+      fullText += node.nodeValue || '';
+    }
+    var idx = fullText.indexOf(needle);
+    if(idx < 0) return null;
+    var endIdx = idx + needle.length;
+    /* idx と endIdx に対応するノード+ローカルオフセットを探す */
+    function locate(globalOffset){
+      for(var i=0;i<nodes.length;i++){
+        var s = offsets[i];
+        var e = s + (nodes[i].nodeValue || '').length;
+        if(globalOffset <= e) return { node: nodes[i], offset: globalOffset - s };
+      }
+      var last = nodes[nodes.length-1];
+      return { node: last, offset: (last.nodeValue||'').length };
+    }
+    var startLoc = locate(idx);
+    var endLoc = locate(endIdx);
+    var range = document.createRange();
+    try {
+      range.setStart(startLoc.node, startLoc.offset);
+      range.setEnd(endLoc.node, endLoc.offset);
+      return range;
+    } catch(e){ return null; }
+  }
+  function _wrapRangeAsMarker(range, noteId, hasNote){
+    var span = document.createElement('span');
+    span.className = 'marker-hl' + (hasNote ? ' has-note' : '');
+    span.dataset.noteId = noteId;
+    try { range.surroundContents(span); return span; }
+    catch(e){ /* 範囲が複数要素に跨る場合の保険 */
+      var frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+      return span;
+    }
+  }
+  function _currentPageEl(){
+    /* 現在表示中の.pageを推定（idx番目） */
+    var pages = document.querySelectorAll('#strip .page');
+    if(pages.length === 0) return null;
+    return pages[idx] || null;
+  }
+  async function applyMarkersToCurrentPage(){
+    var pageEl = _currentPageEl();
+    if(!pageEl) return;
+    /* 既存のmarkerを一旦解除（再適用するため） */
+    pageEl.querySelectorAll('.marker-hl').forEach(function(s){
+      var t = document.createTextNode(s.textContent);
+      s.parentNode.replaceChild(t, s);
+    });
+    pageEl.normalize();
+
+    if(!WEBON.isReady()) return;
+    var user = await WEBON.getUser();
+    if(!user) return;
+    var pk = currentPageKey();
+    var mine = await WEBON.listMyNotes(pk);
+    if(!mine || mine.length === 0) return;
+
+    /* quoteがあるものだけマーカー対象。短い順に処理（重なり対策） */
+    var withQuote = mine.filter(function(n){ return n.quote && n.quote.length > 1; });
+    withQuote.sort(function(a,b){ return (a.quote.length) - (b.quote.length); });
+
+    /* 適用先：本文系の領域を順番に */
+    var targets = pageEl.querySelectorAll('.prose, .ptitle, .ch-onlyhere, .sec-head, .outro');
+    withQuote.forEach(function(n){
+      for(var t=0;t<targets.length;t++){
+        var range = _findTextRangeInNode(targets[t], n.quote);
+        if(range){
+          _wrapRangeAsMarker(range, n.id, !!(n.content && n.content.length));
+          break;
+        }
+      }
+    });
+  }
+
+  /* マーカーをタップしたらメモシートを開く（そのマーカーの内容にフォーカス） */
+  document.addEventListener('click', function(e){
+    var hl = e.target.closest('.marker-hl');
+    if(!hl) return;
+    var noteId = hl.dataset.noteId;
+    if(!noteId) return;
+    /* シートを開いて、その note をハイライトしたい */
+    _pendingQuote = null; /* 新規入力ではなく既存表示 */
+    openNoteSheet();
+    /* 少し遅らせて該当noteの編集モードへ */
+    setTimeout(function(){
+      var item = document.querySelector('.note-item[data-note-id="'+noteId+'"]');
+      if(item){
+        item.scrollIntoView({ behavior:'smooth', block:'center' });
+        item.classList.add('focused');
+        setTimeout(function(){ item.classList.remove('focused'); }, 1400);
+      }
+    }, 200);
+  });
+
+  /* ページ送り時にマーカーを再適用 */
+  var _origRender = render;
+  render = function(){
+    _origRender.apply(this, arguments);
+    setTimeout(applyMarkersToCurrentPage, 50);
+  };
 
   /* 削除ボタン（自分のメモ） */
   el('shbody').addEventListener('click', async function(e){
