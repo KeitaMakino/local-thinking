@@ -158,6 +158,12 @@
       if(!ready) return {error:{message:"offline"}};
       return await sb.from('notes').delete().eq('id', noteId);
     },
+    updateNote: async function(noteId, patch){
+      if(!ready) return {error:{message:"offline"}};
+      var p = Object.assign({}, patch || {});
+      p.updated_at = new Date().toISOString();
+      return await sb.from('notes').update(p).eq('id', noteId).select().single();
+    },
 
     /* プロフィール */
     getProfile: async function(){

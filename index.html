@@ -1713,6 +1713,7 @@
      - 選択文字列がある場合は quote としても保存
   */
   var _pendingQuote = null;  // 次に投稿するメモに紐付ける引用
+  var _editingNoteId = null; // 既存メモ(マーカー)を編集中ならそのID
   function currentPageKey(){
     var ch = chapterOf(idx);
     var r = chapterRanges[ch.id];
@@ -1808,17 +1809,34 @@
   }
   function openNoteSheet(){
     scrim.classList.add('show'); sheet.classList.add('show');
-    /* composer内の引用プレビューを更新 */
+    syncComposerUI();
+    renderNoteSheet();
+  }
+  /* composer の状態（新規／編集／引用なし）に応じて見た目を更新 */
+  function syncComposerUI(){
     var cq = el('composeQuote'), cqt = el('composeQuoteText');
+    var sendBtn = el('noteSend');
+    if(_editingNoteId){
+      sendBtn.textContent = '保存';
+    } else {
+      sendBtn.textContent = '投稿';
+    }
     if(_pendingQuote){
       cqt.textContent = '「'+_pendingQuote+'」';
       cq.style.display = '';
     } else {
       cq.style.display = 'none';
     }
-    renderNoteSheet();
   }
-  function closeSheet(){ scrim.classList.remove('show'); sheet.classList.remove('show'); }
+  function closeSheet(){
+    scrim.classList.remove('show'); sheet.classList.remove('show');
+    /* 編集モードや引用状態は閉じる時にクリア */
+    _editingNoteId = null;
+    _pendingQuote = null;
+    if(el('noteInput')) el('noteInput').value = '';
+    if(el('notePublic')) el('notePublic').checked = false;
+    syncComposerUI();
+  }
   scrim.addEventListener('click',closeSheet);
 
   /* FAB → 選択中ならマーカー、なければメモシートを開く */
@@ -1982,24 +2000,28 @@
     });
   }
 
-  /* マーカーをタップしたらメモシートを開く（そのマーカーの内容にフォーカス） */
-  document.addEventListener('click', function(e){
+  /* マーカーをタップしたら編集モードでシートを開く（既存noteに追記/編集できる） */
+  document.addEventListener('click', async function(e){
     var hl = e.target.closest('.marker-hl');
     if(!hl) return;
     var noteId = hl.dataset.noteId;
-    if(!noteId) return;
-    /* シートを開いて、その note をハイライトしたい */
-    _pendingQuote = null; /* 新規入力ではなく既存表示 */
+    if(!noteId || noteId === '_pending') return;
+    /* 既存noteを取得 */
+    var pk = currentPageKey();
+    var mine = await WEBON.listMyNotes(pk);
+    var target = (mine || []).find(function(n){ return n.id === noteId; });
+    if(!target){ return; }
+    /* 編集モードに入る */
+    _editingNoteId = noteId;
+    _pendingQuote = target.quote || null;
+    /* composerに既存内容を流し込む */
+    el('noteInput').value = target.content || '';
+    el('notePublic').checked = !!target.is_public;
     openNoteSheet();
-    /* 少し遅らせて該当noteの編集モードへ */
+    /* 入力フォーカス */
     setTimeout(function(){
-      var item = document.querySelector('.note-item[data-note-id="'+noteId+'"]');
-      if(item){
-        item.scrollIntoView({ behavior:'smooth', block:'center' });
-        item.classList.add('focused');
-        setTimeout(function(){ item.classList.remove('focused'); }, 1400);
-      }
-    }, 200);
+      try { el('noteInput').focus(); } catch(e2){}
+    }, 220);
   });
 
   /* ページ送り時にマーカーを再適用 */
@@ -2023,31 +2045,46 @@
     }
   });
 
-  /* 投稿（quote付きの場合は紐付けて保存） */
+  /* 投稿または保存（編集中なら update、新規なら insert） */
   el('noteSend').addEventListener('click', async function(){
     var content = (el('noteInput').value||'').trim();
     if(!content) return;
     var isPub = el('notePublic').checked;
-    var pk = currentPageKey();
-    var quote = _pendingQuote;  // この投稿で紐付ける引用
     el('noteSend').disabled = true;
-    var r = await WEBON.saveNote(pk, content, isPub, quote);
+    var r;
+    if(_editingNoteId){
+      r = await WEBON.updateNote(_editingNoteId, { content: content, is_public: isPub });
+    } else {
+      r = await WEBON.saveNote(currentPageKey(), content, isPub, _pendingQuote);
+    }
     el('noteSend').disabled = false;
     if(r && r.error){
       toast('保存できませんでした：' + (r.error.message || ''));
       return;
     }
+    /* 編集モードならマーカーのスタイルを has-note に更新 */
+    if(_editingNoteId){
+      var marker = document.querySelector('.marker-hl[data-note-id="'+_editingNoteId+'"]');
+      if(marker) marker.classList.add('has-note');
+      toast('メモを保存しました');
+    } else {
+      toast(isPub ? '公開メモを投稿しました' : 'メモを保存しました');
+    }
+    /* 状態リセット */
     el('noteInput').value = '';
     el('notePublic').checked = false;
     _pendingQuote = null;
-    el('composeQuote').style.display = 'none';
-    toast(isPub ? '公開メモを投稿しました' : 'メモを保存しました');
+    _editingNoteId = null;
+    syncComposerUI();
     renderNoteSheet();
   });
-  /* 引用プレビューの×ボタン：このメモから引用を外す */
+  /* 引用プレビューの×ボタン：引用＋編集モードをクリア */
   el('composeQuoteClear').addEventListener('click', function(){
     _pendingQuote = null;
-    el('composeQuote').style.display = 'none';
+    _editingNoteId = null;
+    el('noteInput').value = '';
+    el('notePublic').checked = false;
+    syncComposerUI();
   });
 
   /* ログイン誘導リンク */
