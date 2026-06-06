@@ -701,7 +701,7 @@
     overflow-x:hidden;overflow-y:hidden;
     justify-content:flex-start;
   }
-  body.vert .page:has(.tp-vert){overflow-x:auto;}
+  body.vert .page:has(.tp-vert){overflow-x:auto;position:relative;}
   /* 縦書き時のタイトルページは縦・横どちらにも中央寄せ */
   body.vert .page:has(.page-vignette){align-items:center;}
   /* 縦書きは紙の本に合わせて「右スワイプ=次ページ」「ページは右→左へ進む」。
@@ -783,6 +783,29 @@
   .tpv-ch-title:active{opacity:.55;}
   .tpv-ch-secs{
     font-size:15px;color:var(--ink-soft);letter-spacing:.02em;line-height:1.7;
+  }
+  /* 左側にスクロールできることを示すヒント（縦書きTOC専用）
+     - 画面の左端に常駐
+     - ◀がふわっと左右に揺れて「もっと左にある」を示す
+     - スクロール開始時にフェードアウトしたいので JS で .hide を付与 */
+  .tp-scroll-hint{
+    position:absolute;left:8px;top:50%;transform:translateY(-50%);
+    writing-mode:vertical-rl;text-orientation:mixed;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    font-family:"Jost","Zen Maru Gothic","Hiragino Sans",sans-serif;
+    font-size:11px;color:var(--ink-soft);letter-spacing:.18em;
+    pointer-events:none;z-index:2;
+    transition:opacity .35s ease;
+  }
+  .tp-scroll-hint .arrow{
+    writing-mode:horizontal-tb;font-size:18px;color:var(--accent-deep);
+    animation:nudgeLeft 1.7s ease-in-out infinite;
+  }
+  .tp-scroll-hint .lbl{font-size:10px;letter-spacing:.32em;color:var(--ink-soft);opacity:.85;}
+  .tp-scroll-hint.hide{opacity:0;}
+  @keyframes nudgeLeft{
+    0%,100%{transform:translateX(0);}
+    50%{transform:translateX(-5px);}
   }
 
   /* TOCモーダル下部の設定ボタン（縦／横トグル） */
@@ -1145,6 +1168,11 @@
   function renderOutro(b){
     return '<div class="outro mincho">'+esc(b.text)+'</div>';
   }
+  function toFullWidthDigits(s){
+    return String(s||'').replace(/[0-9]/g, function(d){
+      return String.fromCharCode(0xFF10 + (d.charCodeAt(0) - 48));
+    });
+  }
   function renderTocPreview(b){
     /* 縦書きモード：章タイトル(リンク) + 項目を/区切りで小さく表示。
        全章がビューポートに収まらない場合は、JSでスワイプ→横スクロールに転用。 */
@@ -1159,9 +1187,11 @@
         } else if(ch.subtitle){
           secText = ch.subtitle;
         }
+        /* 章番号の半角数字は縦書きで90度寝るので全角化（1→１） */
+        var chNo = toFullWidthDigits(ch.no);
         return '<div class="tpv-ch">'
              +   '<a class="tpv-ch-title mincho" data-jump="'+esc(ch.id)+'">'
-             +     esc(ch.no)+'　'+esc(ch.title)
+             +     esc(chNo)+'　'+esc(ch.title)
              +   '</a>'
              +   (secText ? '<br><span class="tpv-ch-secs mincho">'+esc(secText)+'</span>' : '')
              + '</div>';
@@ -1169,7 +1199,8 @@
       return '<div class="tp tp-vert">'
            + '<div class="tpv-head mincho">'+esc(headText)+'</div>'
            + blocks
-           + '</div>';
+           + '</div>'
+           + '<div class="tp-scroll-hint" aria-hidden="true"><span class="arrow">◂</span><span class="lbl">章はつづく</span></div>';
     }
     /* 横書きモード：従来通りのカード一覧 */
     var purchased = isPurchased();
@@ -1426,7 +1457,18 @@
     requestAnimationFrame(function(){
       document.querySelectorAll('.tp-vert').forEach(function(tp){
         var pg = tp.closest('.page');
-        if(pg) pg.scrollLeft = pg.scrollWidth;
+        if(pg){
+          pg.scrollLeft = pg.scrollWidth;
+          /* スクロール開始でヒントをフェードアウト */
+          var hint = pg.querySelector('.tp-scroll-hint');
+          if(hint){
+            var hideOnce = function(){
+              hint.classList.add('hide');
+              pg.removeEventListener('scroll', hideOnce);
+            };
+            pg.addEventListener('scroll', hideOnce, { passive:true });
+          }
+        }
       });
     });
   }
