@@ -1574,6 +1574,16 @@
 
   /* keyboard */
   window.addEventListener('keydown',function(e){
+    /* 入力欄やテキストエリアにフォーカスがある時はページ送りキーを無視 */
+    var t = e.target;
+    var tag = t && t.tagName;
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
+    /* 認証モーダルが開いている時もページ送りはしない（Escapeのみ受け付け） */
+    var authM = el('authModal');
+    if(authM && authM.classList.contains('show')){
+      if(e.key==='Escape'){ authM.classList.remove('show'); }
+      return;
+    }
     if(toc.classList.contains('show')){ if(e.key==='Escape') closeToc(); return; }
     if(sheet.classList.contains('show')){ if(e.key==='Escape') closeSheet(); return; }
     if(document.body.classList.contains('cover')){
