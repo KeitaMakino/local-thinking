@@ -1422,22 +1422,23 @@
         var chLocked = isLocked(ch);
         ch.sections.forEach(function(s, sidx){
           var last = sidx === ch.sections.length-1;
+          var secAttrs = 'data-chapter="'+esc(ch.id)+'" data-section="'+esc(s.no||'')+'" data-section-head="'+esc(s.head||'')+'"';
           if(s.pages && s.pages.length){
             /* セクション本文あり：①項目扉（sec-no + sec-head の中央寄せ） ②本文ページ群 */
-            html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
+            html += '<section class="page" '+secAttrs+'>'
                   + '<div class="sec-page">'
                   +   '<div class="sec-no">'+esc(s.no)+'</div>'
                   +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
                   + '</div></section>';
             var sPages = s._pages_expanded || s.pages;
             sPages.forEach(function(page){
-              html += '<section class="page" data-chapter="'+esc(ch.id)+'">';
+              html += '<section class="page" '+secAttrs+'>';
               (page.blocks||[]).forEach(function(b){ html += renderBlock(b); });
               html += '</section>';
             });
           } else {
             /* セクション本文なし：骨組みページ（鋭意執筆中／🔒 本文ロック中）*/
-            html += '<section class="page" data-chapter="'+esc(ch.id)+'">'
+            html += '<section class="page" '+secAttrs+'>'
                   + '<div class="sec-page">'
                   +   '<div class="sec-no">'+esc(s.no)+'</div>'
                   +   '<div class="sec-head mincho">'+esc(s.head)+'</div>'
@@ -1568,12 +1569,22 @@
     var pInCh=idx - r.start;
     prog.style.width=(pInCh/Math.max(1,(r.len-1))*100)+'%';
     pgnum.textContent='P.'+(pInCh+1)+' ／ '+r.len;
-    /* 下部メーターに章タイトルを表示（章数字あり→「第N章 タイトル」、それ以外→title） */
+    /* 下部メーターのラベル：
+       本文中の項目ページなら「項目タイトル」、項目に属さない章カバー等は章タイトル */
     var chLabel = el('chLabel');
     if(chLabel){
-      var labelText = isNumberedChapter(ch)
-        ? (chapterPrefix(ch) + ' ' + ch.title)
-        : ch.title;
+      var pages = document.querySelectorAll('#strip .page');
+      var curPage = pages[idx];
+      var secHead = curPage ? curPage.getAttribute('data-section-head') : '';
+      var secNo   = curPage ? curPage.getAttribute('data-section') : '';
+      var labelText;
+      if(secHead){
+        labelText = secNo ? (secNo + ' ' + secHead) : secHead;
+      } else {
+        labelText = isNumberedChapter(ch)
+          ? (chapterPrefix(ch) + ' ' + ch.title)
+          : ch.title;
+      }
       chLabel.textContent = labelText;
     }
     /* appbar title — for numbered chapters, sub = chapter title; otherwise sub = subtitle */
