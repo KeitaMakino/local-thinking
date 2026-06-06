@@ -454,11 +454,16 @@
   .note-item .nm{font-family:"Jost",sans-serif;font-size:10.5px;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:4px;}
   .note-item .vis{font-size:10px;color:var(--ink-soft);float:right;}
   .note-item.mine{background:#FFF8EF;border-color:#EFE4CC;}
-  .note-item .del{
-    position:absolute;top:6px;right:8px;background:none;border:none;
-    color:var(--ink-soft);font-size:13px;cursor:pointer;padding:2px 6px;
+  .note-item .note-actions{
+    position:absolute;top:4px;right:4px;display:flex;gap:4px;
   }
-  .note-item .del:hover{color:var(--accent-deep);}
+  .note-item .note-actions button{
+    background:none;border:none;color:var(--ink-soft);
+    font-size:13px;cursor:pointer;padding:4px 8px;border-radius:6px;
+    transition:background .12s;
+  }
+  .note-item .note-actions button:hover{background:rgba(0,0,0,.05);color:var(--accent-deep);}
+  .note-item .note-actions .edit{font-size:14px;}
   .note-empty{font-size:12px;color:var(--ink-soft);text-align:center;padding:18px 0;}
   .note-empty-inline{font-size:11.5px;color:var(--ink-soft);font-style:italic;}
   .note-item.focused{box-shadow:0 0 0 2px var(--accent);transition:box-shadow .25s;}
@@ -475,27 +480,24 @@
   .sel-memo-btn.show{display:block;}
   .sel-memo-btn::before{content:"🖍 ";}
 
-  /* 本文中のマーカー（自分が付けたハイライト）
-     文字位置を絶対にずらさないために：
-     - display:inline / margin・padding・borderはすべてゼロ
-     - border-radius / transitionも無し（再計算を発生させない）
-     - 背景はlinear-gradient（細めの帯）。文字幅に影響しない */
+  /* 本文中のマーカー（自分が付けたハイライト）：細めの明るい青の下線
+     文字位置を絶対にずらさないため display:inline / 余白0 */
   .marker-hl{
     display:inline;
     margin:0;padding:0;border:0;
-    background:linear-gradient(transparent 70%, rgba(231,170,84,.5) 70%);
+    background:linear-gradient(transparent 84%, rgba(74,158,225,.65) 84%);
     cursor:pointer;
     -webkit-box-decoration-break:clone;
     box-decoration-break:clone;
   }
   .marker-hl.has-note{
-    background:linear-gradient(transparent 70%, rgba(194,107,54,.55) 70%);
+    background:linear-gradient(transparent 84%, rgba(36,118,200,.78) 84%);
   }
   body.vert .marker-hl{
-    background:linear-gradient(to right, transparent 72%, rgba(231,170,84,.5) 72%);
+    background:linear-gradient(to right, transparent 86%, rgba(74,158,225,.65) 86%);
   }
   body.vert .marker-hl.has-note{
-    background:linear-gradient(to right, transparent 72%, rgba(194,107,54,.55) 72%);
+    background:linear-gradient(to right, transparent 86%, rgba(36,118,200,.78) 86%);
   }
   /* 引用ブロック（メモ一覧での選択テキスト表示） */
   .note-item .quote{
@@ -1774,7 +1776,10 @@
           var contentDisplay = n.content ? esc(n.content) : '<span class="note-empty-inline">（メモなしのマーカー）</span>';
           var visTag = n.is_public ? '🌐 公開' : (n.quote && !n.content ? '🖍 マーカー' : '🔒 自分のみ');
           d.innerHTML = '<div class="nm">'+visTag+'</div>'
-                      + '<button class="del" data-id="'+esc(n.id)+'" aria-label="削除">×</button>'
+                      + '<div class="note-actions">'
+                      +   '<button class="edit" data-id="'+esc(n.id)+'" aria-label="編集">✎</button>'
+                      +   '<button class="del" data-id="'+esc(n.id)+'" aria-label="削除">×</button>'
+                      + '</div>'
                       + qh
                       + contentDisplay;
           body.appendChild(d);
@@ -1909,16 +1914,8 @@
     if(fake2 && r.data){ fake2.dataset.noteId = r.data.id; }
     toast('マーカーを付けました');
     updateFabForSelection();
-    /* そのまま「このマーカーにメモを書く」モードでシートを開く。
-       不要なら閉じるだけでマーカーは残る。 */
-    if(r.data && r.data.id){
-      _editingNoteId = r.data.id;
-      _pendingQuote = v.text;
-      el('noteInput').value = '';
-      el('notePublic').checked = false;
-      openNoteSheet();
-      setTimeout(function(){ try { el('noteInput').focus(); } catch(e3){} }, 220);
-    }
+    /* シートは自動で開かない。続けてマーカーが付けられる。
+       後でメモを書きたい時は my notes (FABタップ) かマーカー本体タップから */
   }
 
   /* ===== 自分のマーカーを本文に適用 ===== */
@@ -2040,21 +2037,37 @@
     setTimeout(applyMarkersToCurrentPage, 50);
   };
 
-  /* 削除ボタン（自分のメモ・マーカー） */
+  /* note item の編集／削除（自分のメモ・マーカー） */
   el('shbody').addEventListener('click', async function(e){
+    /* 編集ボタン */
+    var editBtn = e.target.closest('.edit');
+    if(editBtn){
+      var id1 = editBtn.dataset.id;
+      var pk = currentPageKey();
+      var mine = await WEBON.listMyNotes(pk);
+      var target = (mine || []).find(function(n){ return n.id === id1; });
+      if(!target) return;
+      _editingNoteId = id1;
+      _pendingQuote = target.quote || null;
+      el('noteInput').value = target.content || '';
+      el('notePublic').checked = !!target.is_public;
+      syncComposerUI();
+      setTimeout(function(){ try { el('noteInput').focus(); } catch(e3){} }, 0);
+      toast('編集中：' + (target.quote ? '「'+target.quote.slice(0,12)+(target.quote.length>12?'…':'')+'」' : 'メモ'));
+      return;
+    }
+    /* 削除ボタン */
     var btn = e.target.closest('.del'); if(!btn) return;
     if(!confirm('このメモ・マーカーを削除しますか？')) return;
     var id = btn.dataset.id;
     if(WEBON.isReady()){
       try {
         await window._sbDel(id);
-        /* 本文上のマーカーDOMを撤去 */
         var hl = document.querySelector('.marker-hl[data-note-id="'+id+'"]');
         if(hl){
           var t = document.createTextNode(hl.textContent);
           hl.parentNode.replaceChild(t, hl);
         }
-        /* 念のためページ全体のマーカーを再適用 */
         applyMarkersToCurrentPage();
         renderNoteSheet();
         toast('削除しました');
