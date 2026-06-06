@@ -356,6 +356,27 @@
   .auth-logout:active{background:var(--paper-edge);}
   .auth-field{margin-top:18px;text-align:left;}
   .auth-label{display:block;font-size:11px;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:6px;}
+  /* アカウントメニュー内の共通エリア（読み方トグルなど） */
+  .acc-section{margin-bottom:8px;}
+  .acc-row-label{font-size:10.5px;letter-spacing:.22em;color:var(--ink-soft);
+    text-align:center;margin-bottom:8px;font-family:"Jost",sans-serif;}
+  .acc-section .modetog{margin:0 auto;display:inline-flex;}
+  .acc-row{text-align:center;}
+  .acc-row-note{font-size:10.5px;color:var(--ink-soft);text-align:center;margin-top:8px;letter-spacing:.04em;}
+  .auth-divider{height:1px;background:var(--paper-edge);margin:18px 0 8px;}
+
+  /* 右上の人アイコン（appbar内） */
+  .acc-icon{
+    background:none;border:none;padding:6px 8px;cursor:pointer;
+    color:var(--ink);position:relative;display:flex;align-items:center;justify-content:center;
+  }
+  .acc-icon:active{opacity:.6;}
+  .acc-icon svg{display:block;}
+  .acc-icon .acc-dot{
+    position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;
+    background:#56a25a;display:none;border:1.5px solid var(--paper);
+  }
+  .acc-icon.logged .acc-dot{display:block;}
   .auth-status{
     margin-top:14px;font-size:12px;line-height:1.7;color:var(--ink-soft);
     text-align:center;font-family:"Zen Maru Gothic",sans-serif;
@@ -787,10 +808,13 @@
     <div class="appbar">
       <button class="tocbtn" id="tocbtn" aria-label="目次"><span></span><span></span><span></span></button>
       <div class="title" id="appbar-title">プロローグ<small>LOCAL THINKING</small></div>
-      <div class="modetog" id="modetog">
-        <button data-mode="social" class="active">みんな</button>
-        <button data-mode="solo">ひとり</button>
-      </div>
+      <button class="acc-icon" id="accountAppbarBtn" aria-label="アカウント">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8.5" r="3.6"/>
+          <path d="M4.5 20.5v-1.2c0-2.9 2.4-5.3 5.3-5.3h4.4c2.9 0 5.3 2.4 5.3 5.3v1.2"/>
+        </svg>
+        <span class="acc-dot" id="accDot"></span>
+      </button>
     </div>
 
     <div class="viewport" id="viewport">
@@ -890,10 +914,23 @@
   </div>
 </div>
 
-<!-- ===== Auth Modal (Magic Link / WEBON) ===== -->
+<!-- ===== Account Menu Modal (Magic Link / WEBON) ===== -->
 <div class="auth-modal" id="authModal" aria-hidden="true">
   <div class="auth-card">
     <button class="auth-x" id="authClose" aria-label="閉じる">×</button>
+
+    <!-- 共通：読み方トグル（みんな/ひとり） -->
+    <div class="acc-section">
+      <div class="acc-row-label">読み方</div>
+      <div class="modetog" id="modetog">
+        <button data-mode="social" class="active">みんな</button>
+        <button data-mode="solo">ひとり</button>
+      </div>
+      <div class="acc-row-note" id="modeNote">みんな：他の読者のマーカー／コメントが見える</div>
+    </div>
+
+    <div class="auth-divider"></div>
+
     <div id="authStateOut">
       <div class="auth-kicker">WEBON</div>
       <h3 class="auth-title">ログイン／新規登録</h3>
@@ -904,7 +941,7 @@
     </div>
     <div id="authStateIn" style="display:none;">
       <div class="auth-kicker">WEBON ACCOUNT</div>
-      <h3 class="auth-title">アカウント設定</h3>
+      <h3 class="auth-title">アカウント</h3>
       <p class="auth-sub" id="authUserEmail">—</p>
       <div class="auth-field">
         <label class="auth-label" for="authPenName">表示名（公開メモで使われます）</label>
@@ -1700,7 +1737,7 @@
   });
   viewport.addEventListener('dragstart',function(e){ e.preventDefault(); });
 
-  /* read-mode toggle */
+  /* read-mode toggle（アカウントメニュー内に移設） */
   var modetog=el('modetog');
   modetog.addEventListener('click',function(e){
     var b=e.target.closest('button'); if(!b) return;
@@ -1708,7 +1745,12 @@
     b.classList.add('active');
     var solo=b.dataset.mode==='solo';
     document.body.classList.toggle('solo',solo);
-    toast(solo?'ひとり読みモード：書き込みを隠しました':'みんな読みモード：読者の熱が見えます');
+    var modeNote = el('modeNote');
+    if(modeNote){
+      modeNote.textContent = solo
+        ? 'ひとり：他の人のマーカーやコメントを隠してひとりで読む'
+        : 'みんな：他の読者のマーカー／コメントが見える';
+    }
   });
 
   /* heatmap & marker click handlers: see attachStripDelegate() below */
@@ -2319,6 +2361,7 @@
       paneIn.style.display='';
       emailLabel.textContent = user.email || '—';
       lblAccount.textContent = 'アカウント';
+      var appIcon = el('accountAppbarBtn'); if(appIcon) appIcon.classList.add('logged');
       /* プロフィールを取得して pen_name 欄に反映 */
       if(WEBON.isReady()){
         WEBON.getProfile().then(function(p){
@@ -2331,9 +2374,12 @@
       paneOut.style.display='';
       paneIn.style.display='none';
       lblAccount.textContent = 'ログイン';
+      var appIcon = el('accountAppbarBtn'); if(appIcon) appIcon.classList.remove('logged');
     }
 
     btnAccount.addEventListener('click', openModal);
+    var appbarAccount = el('accountAppbarBtn');
+    if(appbarAccount) appbarAccount.addEventListener('click', openModal);
     btnClose.addEventListener('click', closeModal);
     modal.addEventListener('click', function(e){ if(e.target===modal) closeModal(); });
 
