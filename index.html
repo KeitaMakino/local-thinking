@@ -176,7 +176,12 @@
   .progwrap{flex:1;}
   .progline{height:3px;border-radius:3px;background:var(--paper-edge);overflow:hidden;}
   .progline i{display:block;height:100%;background:var(--accent);width:0;transition:width .42s cubic-bezier(.32,.72,.26,1);}
-  .pgnum{font-size:10px;color:var(--ink-soft);text-align:center;margin-top:4px;letter-spacing:.06em;}
+  /* 章タイトル ＋ ページ番号 を1行で */
+  .pgmeta{display:flex;align-items:baseline;justify-content:center;gap:10px;margin-top:4px;
+    font-size:10px;color:var(--ink-soft);letter-spacing:.06em;}
+  .pgmeta .ch-label{color:var(--ink);font-size:10.5px;letter-spacing:.08em;}
+  .pgmeta .ch-sep{color:var(--paper-edge);font-size:10px;}
+  .pgnum{font-size:10px;color:var(--ink-soft);letter-spacing:.06em;}
 
   /* hide chrome under cover */
   body.cover .appbar,body.cover .botbar{opacity:0;transform:translateY(6px);pointer-events:none;}
@@ -826,7 +831,11 @@
       <button class="nav" id="prev">‹</button>
       <div class="progwrap">
         <div class="progline"><i id="prog"></i></div>
-        <div class="pgnum" id="pgnum">P.1　／　8</div>
+        <div class="pgmeta">
+          <span class="ch-label" id="chLabel">プロローグ</span>
+          <span class="ch-sep">／</span>
+          <span class="pgnum" id="pgnum">P.1　／　8</span>
+        </div>
       </div>
       <button class="nav" id="next">›</button>
     </div>
@@ -1516,7 +1525,15 @@
     var r=chapterRanges[ch.id];
     var pInCh=idx - r.start;
     prog.style.width=(pInCh/Math.max(1,(r.len-1))*100)+'%';
-    pgnum.textContent='P.'+(pInCh+1)+'　／　'+r.len;
+    pgnum.textContent='P.'+(pInCh+1)+' ／ '+r.len;
+    /* 下部メーターに章タイトルを表示（章数字あり→「第N章 タイトル」、それ以外→title） */
+    var chLabel = el('chLabel');
+    if(chLabel){
+      var labelText = isNumberedChapter(ch)
+        ? (chapterPrefix(ch) + ' ' + ch.title)
+        : ch.title;
+      chLabel.textContent = labelText;
+    }
     /* appbar title — for numbered chapters, sub = chapter title; otherwise sub = subtitle */
     var sub = isNumberedChapter(ch) ? ch.title : (ch.subtitle || 'LOCAL THINKING');
     titleEl.innerHTML = esc(chapterPrefix(ch)) + '<small>'+esc(sub)+'</small>';
