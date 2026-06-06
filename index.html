@@ -1910,6 +1910,16 @@
     if(fake2 && r.data){ fake2.dataset.noteId = r.data.id; }
     toast('マーカーを付けました');
     updateFabForSelection();
+    /* そのまま「このマーカーにメモを書く」モードでシートを開く。
+       不要なら閉じるだけでマーカーは残る。 */
+    if(r.data && r.data.id){
+      _editingNoteId = r.data.id;
+      _pendingQuote = v.text;
+      el('noteInput').value = '';
+      el('notePublic').checked = false;
+      openNoteSheet();
+      setTimeout(function(){ try { el('noteInput').focus(); } catch(e3){} }, 220);
+    }
   }
 
   /* ===== 自分のマーカーを本文に適用 ===== */
@@ -2031,16 +2041,24 @@
     setTimeout(applyMarkersToCurrentPage, 50);
   };
 
-  /* 削除ボタン（自分のメモ） */
+  /* 削除ボタン（自分のメモ・マーカー） */
   el('shbody').addEventListener('click', async function(e){
     var btn = e.target.closest('.del'); if(!btn) return;
-    if(!confirm('このメモを削除しますか？')) return;
+    if(!confirm('このメモ・マーカーを削除しますか？')) return;
     var id = btn.dataset.id;
     if(WEBON.isReady()){
       try {
         await window._sbDel(id);
+        /* 本文上のマーカーDOMを撤去 */
+        var hl = document.querySelector('.marker-hl[data-note-id="'+id+'"]');
+        if(hl){
+          var t = document.createTextNode(hl.textContent);
+          hl.parentNode.replaceChild(t, hl);
+        }
+        /* 念のためページ全体のマーカーを再適用 */
+        applyMarkersToCurrentPage();
         renderNoteSheet();
-        toast('メモを削除しました');
+        toast('削除しました');
       } catch(e2){ toast('削除に失敗しました'); }
     }
   });
