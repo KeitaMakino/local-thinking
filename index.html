@@ -16,7 +16,12 @@
     --frame:#16130f;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
+  html,body{
+    height:100%;
+    /* Macトラックパッドの二本指スワイプによる「戻る/進む」を抑止 */
+    overscroll-behavior-x:none;
+    overscroll-behavior-y:contain;
+  }
   body{
     font-family:"Jost","Zen Maru Gothic","Hiragino Sans",sans-serif;font-weight:400;
     background:#E4E0D8;
