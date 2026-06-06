@@ -476,27 +476,26 @@
   .sel-memo-btn::before{content:"🖍 ";}
 
   /* 本文中のマーカー（自分が付けたハイライト）
-     横書き：文字の下半分に色（下線風）
-     縦書き：文字の右側に色（縦書きの「圏点」の位置に相当） */
+     文字位置を絶対にずらさないために：
+     - display:inline / margin・padding・borderはすべてゼロ
+     - border-radius / transitionも無し（再計算を発生させない）
+     - 背景はlinear-gradient（細めの帯）。文字幅に影響しない */
   .marker-hl{
-    background:linear-gradient(transparent 60%, rgba(231,170,84,.45) 60%);
-    cursor:pointer;border-radius:2px;
-    transition:background .15s;
+    display:inline;
+    margin:0;padding:0;border:0;
+    background:linear-gradient(transparent 70%, rgba(231,170,84,.5) 70%);
+    cursor:pointer;
+    -webkit-box-decoration-break:clone;
+    box-decoration-break:clone;
   }
   .marker-hl.has-note{
-    background:linear-gradient(transparent 60%, rgba(194,107,54,.55) 60%);
-  }
-  .marker-hl:hover{
-    background:linear-gradient(transparent 55%, rgba(194,107,54,.6) 55%);
+    background:linear-gradient(transparent 70%, rgba(194,107,54,.55) 70%);
   }
   body.vert .marker-hl{
-    background:linear-gradient(to right, transparent 62%, rgba(231,170,84,.45) 62%);
+    background:linear-gradient(to right, transparent 72%, rgba(231,170,84,.5) 72%);
   }
   body.vert .marker-hl.has-note{
-    background:linear-gradient(to right, transparent 62%, rgba(194,107,54,.55) 62%);
-  }
-  body.vert .marker-hl:hover{
-    background:linear-gradient(to right, transparent 56%, rgba(194,107,54,.6) 56%);
+    background:linear-gradient(to right, transparent 72%, rgba(194,107,54,.55) 72%);
   }
   /* 引用ブロック（メモ一覧での選択テキスト表示） */
   .note-item .quote{
