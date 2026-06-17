@@ -55,6 +55,17 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: "missing metadata" };
   }
 
+  // 未入金（コンビニ払い等の遅延決済を将来追加した場合）は購入記録を作らない。
+  // その場合は checkout.session.async_payment_succeeded の処理を追加すること。
+  if (session.payment_status !== "paid") {
+    console.warn("checkout completed but not paid yet", session.id, session.payment_status);
+    return { statusCode: 200, body: JSON.stringify({ received: true, deferred: session.payment_status }) };
+  }
+  if (session.currency && session.currency !== "jpy") {
+    console.error("unexpected currency", session.id, session.currency);
+    return { statusCode: 400, body: "unexpected currency" };
+  }
+
   const sbAdmin = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,

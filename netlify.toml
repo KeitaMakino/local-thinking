@@ -7,3 +7,5 @@
   node_bundler = "esbuild"
   # 各ファンクションに必要なnpmパッケージ
   external_node_modules = ["stripe", "@supabase/supabase-js"]
+  # 有料章の本文JSON（公開ディレクトリには置かず、get-chapter 関数にだけ同梱する）
+  included_files = ["netlify/functions/chapters-private/*.json"]

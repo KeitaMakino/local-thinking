@@ -2,14 +2,26 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#E4E0D8">
-<title>LOCAL THINKING — WEB BOOK プロトタイプ</title>
+<title>LOCAL THINKING ── ローカル思考でみつける、資本主義のオルタナティブ</title>
+<meta name="description" content="40歳、東京から南房総へ。上昇志向のロジカルシンキングに対して、小さく身丈で感察する「ローカルシンキング」を提唱する一冊。縦書きで読めるWEB本（WEBON）。">
+<link rel="icon" href="images/logo_main.png">
+<link rel="apple-touch-icon" href="images/logo_main.png">
+<!-- OGP / SNSシェア -->
+<meta property="og:type" content="book">
+<meta property="og:title" content="LOCAL THINKING ── ローカル思考でみつける、資本主義のオルタナティブ">
+<meta property="og:description" content="40歳、東京から南房総へ。「降りる」ことを選んだ著者が見つけた、もう一つの豊かさと思考のかたち。WEBで読む縦書きの本。">
+<meta property="og:url" content="https://local-thinking.com/">
+<meta property="og:image" content="https://local-thinking.com/images/top.webp">
+<meta property="og:site_name" content="WEBON">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Zen+Maru+Gothic:wght@400&display=swap" rel="stylesheet">
 <style>
   :root{
+    color-scheme:light; /* OSダーク設定でもフォーム部品が暗転しないように */
     --paper:#FFFFFF; --paper-edge:#E7E4DE; --ink:#2C2620; --ink-soft:#7C7367;
     --accent:#C26B36; --accent-deep:#A9572A; --sea:#3F6B79; --sea-soft:#7BA0AB;
     --hl1:rgba(199,159,84,.22); --hl2:rgba(206,150,66,.38); --hl3:rgba(210,128,52,.54);
@@ -499,18 +511,6 @@
   .note-empty-inline{font-size:11.5px;color:var(--ink-soft);font-style:italic;}
   .note-item.focused{box-shadow:0 0 0 2px var(--accent);transition:box-shadow .25s;}
 
-  /* 選択時メモボタン（フローティング） */
-  .sel-memo-btn{
-    position:fixed;z-index:40;display:none;
-    background:var(--ink);color:#fff;border:none;
-    font-family:inherit;font-size:12px;letter-spacing:.06em;
-    padding:8px 16px;border-radius:999px;cursor:pointer;
-    box-shadow:0 5px 18px rgba(0,0,0,.32);
-    user-select:none;
-  }
-  .sel-memo-btn.show{display:block;}
-  .sel-memo-btn::before{content:"🖍 ";}
-
   /* 本文中のマーカー（自分が付けたハイライト）：細めの明るい青の下線
      文字位置を絶対にずらさないため display:inline / 余白0 */
   .marker-hl{
@@ -547,9 +547,11 @@
   .compose-quote .qtxt{flex:1;}
   .compose-quote .qclear{background:none;border:none;color:var(--ink-soft);font-size:14px;cursor:pointer;padding:0;}
 
-  /* メモFAB（読書画面の角に常駐） */
+  /* メモFAB（読書画面の角に常駐）
+     position:absolute（.screen基準）— fixedだとデスクトップ表示で
+     本のフレーム外（ブラウザウィンドウの隅）に浮いてしまう */
   .notefab{
-    position:fixed;bottom:78px;z-index:30;
+    position:absolute;bottom:78px;z-index:30;
     right:14px; /* 横書き時：右下。縦書きは下で左に切替 */
     width:42px;height:42px;border-radius:50%;border:none;
     background:var(--accent);color:#fff;font-size:17px;cursor:pointer;
@@ -857,7 +859,7 @@
         <div class="pgmeta">
           <span class="ch-label" id="chLabel">プロローグ</span>
           <span class="ch-sep">／</span>
-          <span class="pgnum" id="pgnum">P.1　／　8</span>
+          <span class="pgnum" id="pgnum">P.1 ／ 8</span>
         </div>
       </div>
       <button class="nav" id="next">›</button>
@@ -898,7 +900,7 @@
     </section>
 
     <!-- ===== TABLE OF CONTENTS ===== -->
-    <div class="toc" id="toc">
+    <div class="toc" id="toc" inert>
       <div class="toc-head">
         <span class="toc-ttl">目次</span>
         <button class="toc-x" id="tocclose" aria-label="閉じる">×</button>
@@ -909,7 +911,7 @@
     </div>
 
     <div class="scrim" id="scrim"></div>
-    <div class="sheet" id="sheet">
+    <div class="sheet" id="sheet" inert>
       <div class="grab"></div>
       <div class="sh-head">
         <h3 id="shtitle">このページのメモ</h3>
@@ -938,16 +940,13 @@
     <!-- FAB: メモ書き込み -->
     <button class="notefab" id="notefab" aria-label="メモ">✎</button>
 
-    <!-- 旧: 選択フローティングボタン (iOS選択メニューと衝突するため廃止。FABが兼ねる) -->
-    <button class="sel-memo-btn" id="selMemoBtn" type="button" style="display:none;">マーカーを付ける</button>
-
     <div class="toast" id="toast"></div>
 
   </div>
 </div>
 
 <!-- ===== Account Menu Modal (Magic Link / WEBON) ===== -->
-<div class="auth-modal" id="authModal" aria-hidden="true">
+<div class="auth-modal" id="authModal" aria-hidden="true" inert>
   <div class="auth-card">
     <button class="auth-x" id="authClose" aria-label="閉じる">×</button>
 
@@ -1033,9 +1032,12 @@
      isPurchased() は同期で呼ばれるので、refreshPurchasedState() で状態をキャッシュする。 */
   var PURCHASED_KEY = 'lt_purchased';
   var _purchasedCache = null; // null=unknown, true/false=known via Supabase
+  /* localhost等の開発環境かどうか（デモ機能の出し分けに使う） */
+  var IS_DEV = /^(localhost|127\.|0\.0\.0\.0|192\.168\.)/.test(location.hostname);
   function isPaid(ch){ return ch && ch.id !== 'prologue'; }
   function isPurchased(){
     if(_purchasedCache === true) return true;
+    /* localStorageフラグはUIキャッシュ。本文データ自体はサーバ側で購入確認して配信される */
     try{ return localStorage.getItem(PURCHASED_KEY) === '1'; }catch(e){ return false; }
   }
   function setPurchased(v){
@@ -1052,36 +1054,73 @@
       var prev = _purchasedCache;
       _purchasedCache = p;
       if(p) setPurchased(true);
-      if(prev !== p && typeof rebuild === 'function') rebuild();
+      var gotContent = p ? await loadFullChapters() : false;
+      if((prev !== p || gotContent) && typeof rebuild === 'function') rebuild();
     } catch(e){ console.warn('[WEBON] purchase state refresh failed', e); }
   }
 
   /* ===== data loader =====
-     stage 1: book.json (manifest) + comments.json
-     stage 2: data/chapters/{id}.json for every chapter (parallel)
-     merge:   BOOK[i] = manifest[i]  ∪  chapter_content[i]
+     stage 1: book.json (manifest)
+     stage 2: data/chapters/{id}.json … プロローグ=全文／有料章=アウトライン（見出しのみ）
+     stage 3: 購入済みなら loadFullChapters() が有料章の全文を購入確認つきで取得して差し替え
   */
-  function fetchJson(url){
-    return fetch(url,{cache:'no-cache'}).then(function(r){
+  function fetchJson(url, opts){
+    return fetch(url, Object.assign({cache:'no-cache'}, opts||{})).then(function(r){
       if(!r.ok) throw new Error(url+' HTTP '+r.status);
       return r.json();
     });
   }
-  var BOOK, COMMENTS;
+  var BOOK;
   try{
-    var [manifest, comments] = await Promise.all([
-      fetchJson('data/book.json'),
-      fetchJson('data/comments.json')
-    ]);
-    COMMENTS = comments;
+    var manifest = await fetchJson('data/book.json');
     var chapterContents = await Promise.all(
-      manifest.map(function(ch){ return fetchJson('data/chapters/'+ch.id+'.json'); })
+      manifest.map(function(ch){
+        /* 個別章の取得失敗（アウトライン未生成など）でサイト全体は落とさない */
+        return fetchJson('data/chapters/'+ch.id+'.json').catch(function(e){
+          console.warn('[WEBON] chapter outline missing:', ch.id, e);
+          return {};
+        });
+      })
     );
     BOOK = manifest.map(function(ch, i){ return Object.assign({}, ch, chapterContents[i]); });
   }catch(err){
     console.error('data load failed:',err);
-    document.body.innerHTML = '<div style="padding:24px;font-family:sans-serif;color:#A9572A;line-height:1.7;">本のデータを読み込めませんでした。<br>ローカルでは <code>python3 -m http.server</code> などHTTPサーバ越しに開いてください（file:// では fetch がブロックされます）。</div>';
+    document.body.innerHTML = '<div style="padding:24px;font-family:sans-serif;color:#A9572A;line-height:1.7;">'
+      + (IS_DEV
+          ? '本のデータを読み込めませんでした。<br>ローカルでは <code>python3 -m http.server</code> などHTTPサーバ越しに開いてください（file:// では fetch がブロックされます）。'
+          : '本のデータを読み込めませんでした。<br>通信環境をご確認のうえ、ページを再読み込みしてください。')
+      + '</div>';
     return;
+  }
+
+  /* ===== 有料章の全文取得 =====
+     サーバ（Netlify Function）が Supabase の購入記録を確認してから全文JSONを返す。
+     ローカル開発（Functionsなし）では data/chapters/{id}.full.json（gitignore済み・
+     build.py --dev で生成）をフォールバックに使う。 */
+  var _fullLoaded = {};
+  async function loadFullChapters(){
+    if(!Array.isArray(BOOK)) return false;
+    var token = (window.WEBON && WEBON.isReady()) ? await WEBON.getAccessToken() : null;
+    var changed = false;
+    await Promise.all(BOOK.map(async function(ch){
+      if(!isPaid(ch) || _fullLoaded[ch.id]) return;
+      var data = null;
+      if(token){
+        try{
+          data = await fetchJson('/.netlify/functions/get-chapter?id='+encodeURIComponent(ch.id),
+                                 { headers: { authorization: 'Bearer '+token } });
+        }catch(e){ /* 未購入(403)・Functions未起動などは下のフォールバックへ */ }
+      }
+      if(!data && IS_DEV){
+        try{ data = await fetchJson('data/chapters/'+ch.id+'.full.json'); }catch(e){}
+      }
+      if(data && (data.pages || data.sections)){
+        Object.assign(ch, data);
+        _fullLoaded[ch.id] = true;
+        changed = true;
+      }
+    }));
+    return changed;
   }
 
   /* ===== block renderers (prose / authnote / o2o / grow / title / outro) ===== */
@@ -1092,16 +1131,8 @@
       var lvl = s.hl.level ? ' h'+s.hl.level : '';
       return '<span class="hl'+lvl+'" data-heat="'+esc(s.hl.heat)+'">'+esc(s.text)+'</span>';
     }
-    if(s.marker){
-      var c = COMMENTS[s.marker];
-      if(!c) return '';
-      if(c.kind === 'author'){
-        return '<button class="marker" data-cmt="'+esc(s.marker)+'">'
-             + '<span class="ic" style="background:var(--sea)">✎</span>'+esc(c.label||'著者')+'</button>';
-      }
-      return '<button class="marker" data-cmt="'+esc(s.marker)+'">'
-           + '<span class="ic">＋</span>'+esc(c.count)+'</button>';
-    }
+    /* 旧 comments.json 由来の吹き出しマーカー(s.marker)は廃止。
+       読者の書き込みは Supabase の公開メモ機能（renderNoteSheet）が担う */
     return esc(s.text);
   }
   function renderPara(p){
@@ -1133,11 +1164,12 @@
          + '</div>';
   }
   function renderO2O(b){
+    /* 同種ブロックが複数ページに出てもID重複しないよう data-action で識別 */
     return '<div class="o2o">'
          + '<div class="tag">'+esc(b.tag)+'</div>'
          + '<div class="ot">'+esc(b.title)+'</div>'
          + '<div class="od">'+esc(b.body)+'</div>'
-         + '<button id="o2obtn">'+esc(b.cta)+'</button>'
+         + '<button data-action="o2o">'+esc(b.cta)+'</button>'
          + '</div>';
   }
   function renderGrow(b){
@@ -1148,7 +1180,7 @@
              + '<div class="gt mincho">'+esc(b.title)+'</div>'
              + '<div class="gd">'+body+'</div>';
     if(b.switch){
-      html += '<div class="switch" id="'+esc(b.switch.id)+'">'
+      html += '<div class="switch" data-switch="'+esc(b.switch.id)+'">'
             + '<span class="track"><i></i></span>'
             + '<span>'+esc(b.switch.label)+'</span></div>';
     }
@@ -1161,7 +1193,7 @@
          + '<div class="pw-title mincho">続きは、書籍の購入で。</div>'
          + '<div class="pw-body">第1〜6章＋エピローグの本文を、<br>すべて読めるようになります。</div>'
          + '<div class="pw-price"><b>¥1,000</b>一冊買い切り</div>'
-         + '<button id="pwbtn" type="button">書籍を購入する →</button>'
+         + '<button data-action="purchase" type="button">書籍を購入する →</button>'
          + '<div class="pw-bonus">＋ 購入特典：読者コミュニティへの参加つき<br><span>（著者との対話・月一回の岩井海岸読者会など）</span></div>'
          + '</div>';
   }
@@ -1210,7 +1242,7 @@
       return '<div class="tp-row'+(locked?' locked':'')+'">'
            + '<span class="tp-no">'+esc(ch.no)+'</span>'
            + '<span class="tp-tx"><b>'+esc(ch.title)+'</b><i>'+esc(ch.subtitle||'')+'</i></span>'
-           + '<span class="tp-state">'+(isProl?'読了 ✓':(locked?'🔒':'読む'))+'</span>'
+           + '<span class="tp-state">'+(isProl?'無料公開':(locked?'🔒':'読む'))+'</span>'
            + '</div>';
     }).join('');
     return '<div class="tp">'
@@ -1241,10 +1273,15 @@
      書き分け：縦書きは prose.scrollWidth、横書きは scrollHeight が overflow 判定軸。
   */
   function _splitSentencesJP(text){
+    /* 「。」で文に分割。直後の閉じ括弧類（」』）等）は前の文に含める（行頭禁則） */
+    var CLOSERS = '」』）｝〕》】〙〗"\'';
     var out = [], cur = '';
     for(var i=0;i<text.length;i++){
       cur += text[i];
-      if(text[i]==='。'){ out.push(cur); cur=''; }
+      if(text[i]==='。'){
+        while(i+1 < text.length && CLOSERS.indexOf(text[i+1]) >= 0){ cur += text[++i]; }
+        out.push(cur); cur='';
+      }
     }
     if(cur) out.push(cur);
     return out;
@@ -1324,11 +1361,20 @@
             pages.push(cur); cur = [];
             /* retry with empty page */
           } else {
-            /* 1文すら空ページに入らない → 強制的に詰める */
-            cur.push({ text: sentences[0], cont: contFlag, lead: isFirstGlobal });
+            /* 1文すら空ページに入らない → 文字単位の二分探索で収まる分だけ詰める。
+               （強制押し込みだと overflow:hidden で本文が不可視になるため） */
+            var sent = sentences[0];
+            var clo = 1, chi = sent.length, cbest = 0;
+            while(clo <= chi){
+              var cmid = (clo + chi) >> 1;
+              var ctrial = [{ text: sent.slice(0, cmid), cont: contFlag, lead: isFirstGlobal }];
+              if(fits(ctrial)){ cbest = cmid; clo = cmid + 1; } else { chi = cmid - 1; }
+            }
+            if(cbest === 0) cbest = 1; /* 最低1文字は進めて無限ループを防ぐ */
+            cur.push({ text: sent.slice(0, cbest), cont: contFlag, lead: isFirstGlobal });
             isFirstGlobal = false;
             pages.push(cur); cur = [];
-            remaining = sentences.slice(1).join('');
+            remaining = sent.slice(cbest) + sentences.slice(1).join('');
             contFlag = true; contFromPrev = true;
           }
         }
@@ -1414,7 +1460,7 @@
                 +   (ch.subtitle?'<div class="ch-intro-title mincho">'+esc(ch.subtitle)+'</div>':'')
                 +   (ch.onlyHere?'<div class="ch-onlyhere"><div class="oh">この章の概要</div>'+esc(ch.onlyHere)+'</div>':'')
                 +   '<div class="ch-meta">'
-                +     (ch.volume&&ch.volume.items?'<span><b>'+ch.volume.items+'</b>項目</span>':'')
+                +     (ch.volume&&ch.volume.items?'<span><b>'+esc(ch.volume.items)+'</b>項目</span>':'')
                 +     (ch.volume&&ch.volume.chars?'<span><b>'+esc(ch.volume.chars)+'</b></span>':'')
                 +   '</div>'
                 + '</div></section>';
@@ -1460,14 +1506,23 @@
         var pg = tp.closest('.page');
         if(pg){
           pg.scrollLeft = pg.scrollWidth;
-          /* スクロール開始でヒントをフェードアウト */
           var hint = pg.querySelector('.tp-scroll-hint');
           if(hint){
-            var hideOnce = function(){
-              hint.classList.add('hide');
-              pg.removeEventListener('scroll', hideOnce);
-            };
-            pg.addEventListener('scroll', hideOnce, { passive:true });
+            requestAnimationFrame(function(){
+              /* ヒントはスクロールコンテンツと一緒に流れるabsolute配置なので、
+                 初期スクロール位置（右端）に合わせて画面左端に来るよう置き直す */
+              hint.style.left = (pg.scrollLeft + 8) + 'px';
+              /* 直前のプログラムスクロール由来のscrollイベントで即消えないよう、
+                 少し待ってから「ユーザーのスクロールで消す」リスナーを武装する */
+              var armed = false;
+              setTimeout(function(){ armed = true; }, 150);
+              var hideOnce = function(){
+                if(!armed) return;
+                hint.classList.add('hide');
+                pg.removeEventListener('scroll', hideOnce);
+              };
+              pg.addEventListener('scroll', hideOnce, { passive:true });
+            });
           }
         }
       });
@@ -1479,7 +1534,10 @@
     var rows = '';
     for(var i=0; i<BOOK.length; i++){
       var ch = BOOK[i];
-      var state = (ch.id === 'prologue') ? '読む ›' : '骨組み ›';
+      /* 本文ページの有無に連動した実状態を出す（執筆途中の章は「骨組み」） */
+      var hasBody = !!((ch.pages && ch.pages.length) ||
+                       (ch.sections && ch.sections.some(function(s){ return s.pages && s.pages.length; })));
+      var state = hasBody ? '読む ›' : '骨組み ›';
       rows += '<button class="toc-row" data-jump="' + esc(ch.id) + '">'
            +   '<span class="toc-no">' + esc(ch.no) + '</span>'
            +   '<span class="toc-tx"><b>' + esc(ch.title) + '</b><i>' + esc(ch.subtitle || '') + '</i></span>'
@@ -1488,7 +1546,7 @@
     }
     rows += '<button class="toc-row" data-jump="__cover">'
          +   '<span class="toc-no">⌂</span>'
-         +   '<span class="toc-tx"><b>表紙にもどる</b><i>推薦の帯・しおり</i></span>'
+         +   '<span class="toc-tx"><b>表紙にもどる</b><i>推薦の帯・つづきから読む</i></span>'
          +   '<span class="toc-state">›</span>'
          + '</button>';
     body.innerHTML = rows;
@@ -1541,18 +1599,44 @@
     toastT=setTimeout(function(){ toastEl.classList.remove('show'); },2400);
   }
 
-  /* ===== bookmark ===== */
+  /* ===== bookmark =====
+     保存形式は「chapterId:章内ページ」。グローバルなページ番号は端末サイズ・
+     縦横モード・購入状態でずれるため、章+章内相対位置で持つ。
+     初期化(initBookmark)は applyWritingMode() による最初の rebuild の後に呼ぶ
+     （縦書きのページ構成が確定してから復元位置を計算するため）。 */
   var KEY='lt_webbook_page', savedIdx=0;
-  function save(){ try{ localStorage.setItem(KEY,String(idx)); }catch(e){} }
-  try{
-    var v=parseInt(localStorage.getItem(KEY),10);
-    if(v>0 && v<TOTAL){
-      savedIdx=v;
-      var pLabel = bookmarkLabel(v);
-      var rp = el('obiresumep'); if(rp) rp.textContent = pLabel;
-      var rb = el('obiresume'); if(rb) rb.style.display = 'block';
+  function save(){
+    try{
+      var ch = chapterOf(idx);
+      var r = chapterRanges[ch.id];
+      if(ch && r) localStorage.setItem(KEY, ch.id + ':' + (idx - r.start));
+    }catch(e){}
+  }
+  function resolveBookmark(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return 0;
+      if(raw.indexOf(':') >= 0){
+        var parts = raw.split(':');
+        var r = chapterRanges[parts[0]];
+        var rel = parseInt(parts[1], 10) || 0;
+        if(!r) return 0; /* ロック中など、その章がstripに無い */
+        return Math.min(r.start + rel, r.start + r.len - 1);
+      }
+      var v = parseInt(raw, 10); /* 旧形式（グローバルidx）の後方互換 */
+      return (v > 0 && v < TOTAL) ? v : 0;
+    }catch(e){ return 0; }
+  }
+  function initBookmark(){
+    savedIdx = resolveBookmark();
+    var rb = el('obiresume');
+    if(savedIdx > 0){
+      var rp = el('obiresumep'); if(rp) rp.textContent = bookmarkLabel(savedIdx);
+      if(rb) rb.style.display = 'block';
+    } else if(rb){
+      rb.style.display = 'none';
     }
-  }catch(e){}
+  }
 
   /* ===== render ===== */
   function stripBase(i){
@@ -1626,10 +1710,21 @@
   function updateCoverParallax(){}
 
   /* ===== table of contents ===== */
-  function openToc(){ toc.classList.add('show'); }
-  function closeToc(){ toc.classList.remove('show'); }
+  function openToc(){ toc.classList.add('show'); toc.removeAttribute('inert'); }
+  function closeToc(){ toc.classList.remove('show'); toc.setAttribute('inert',''); }
   el('tocbtn').addEventListener('click',openToc);
   el('tocclose').addEventListener('click',closeToc);
+  /* ロック章へのジャンプ要求 → ペイウォール（stripの最終ページ）へ誘導 */
+  function jumpToChapter(dest){
+    var r = chapterRanges[dest];
+    if(r){ go(r.start); return; }
+    var ch = null;
+    for(var i=0;i<BOOK.length;i++){ if(BOOK[i].id===dest){ ch=BOOK[i]; break; } }
+    if(ch && isLocked(ch)){
+      go(TOTAL-1); /* 未購入時のstrip最終ページ＝ペイウォール */
+      toast('この章は、書籍の購入で読めるようになります');
+    }
+  }
   /* TOCは動的レンダリングなので、行への click は委譲で受ける */
   toc.addEventListener('click',function(e){
     var row = e.target.closest('[data-jump]');
@@ -1638,24 +1733,32 @@
     closeToc();
     if(dest==='__cover'){ showCover(); return; }
     if(document.body.classList.contains('cover')) openBook();
-    var r = chapterRanges[dest];
-    if(r) go(r.start);
+    jumpToChapter(dest);
   });
 
   /* keyboard */
   window.addEventListener('keydown',function(e){
-    /* 入力欄やテキストエリアにフォーカスがある時はページ送りキーを無視 */
     var t = e.target;
     var tag = t && t.tagName;
-    if(tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
-    /* 認証モーダルが開いている時もページ送りはしない（Escapeのみ受け付け） */
     var authM = el('authModal');
-    if(authM && authM.classList.contains('show')){
-      if(e.key==='Escape'){ authM.classList.remove('show'); }
+    var authOpen = authM && authM.classList.contains('show');
+    /* Escapeは入力欄フォーカス中でも、開いているオーバーレイを閉じる */
+    if(e.key==='Escape'){
+      if(authOpen){
+        if(window._authModalClose) window._authModalClose();
+        else authM.classList.remove('show');
+        return;
+      }
+      if(toc.classList.contains('show')){ closeToc(); return; }
+      if(sheet.classList.contains('show')){ closeSheet(); return; }
       return;
     }
-    if(toc.classList.contains('show')){ if(e.key==='Escape') closeToc(); return; }
-    if(sheet.classList.contains('show')){ if(e.key==='Escape') closeSheet(); return; }
+    /* Enter/Spaceはフォーカス中のボタンに任せる（表紙のログイン等が押せるように） */
+    if(tag === 'BUTTON' && (e.key==='Enter' || e.key===' ')) return;
+    /* 入力欄やテキストエリアにフォーカスがある時はページ送りキーを無視 */
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable)) return;
+    /* 認証モーダル・目次・メモシートが開いている間はページ送りしない */
+    if(authOpen || toc.classList.contains('show') || sheet.classList.contains('show')) return;
     if(document.body.classList.contains('cover')){
       if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='ArrowLeft'){ e.preventDefault(); openBook(); }
       return;
@@ -1691,7 +1794,12 @@
       if(_pg) startScrollLeft = _pg.scrollLeft;
     }
     strip.classList.remove('anim');
+    /* moveリスナーはドラッグ中だけ登録（passive:falseの常時監視はスクロール性能を損なう） */
+    window.addEventListener('pointermove', onPointerMove, {passive:false});
   });
+  function detachPointerMove(){
+    window.removeEventListener('pointermove', onPointerMove);
+  }
   /* 文字選択が始まったらスワイプ中止（長押し選択や、PCでのドラッグ選択を尊重） */
   viewport.addEventListener('selectstart',function(){
     if(dragging){
@@ -1700,7 +1808,7 @@
       render();
     }
   });
-  window.addEventListener('pointermove',function(e){
+  function onPointerMove(e){
     if(!dragging || selecting) return;
     var dx=e.clientX-startX, dy=e.clientY-startY;
     if(!decided){
@@ -1744,10 +1852,11 @@
     var overEnd   = vert ? (dx>0) : (dx<0);
     if((idx===0 && overStart) || (idx===TOTAL-1 && overEnd)) off=dx*0.32;
     strip.style.transform='translateX('+(stripBase(idx) + off/w*100)+'%)';
-  },{passive:false});
+  }
   window.addEventListener('pointerup',function(e){
     if(!dragging) return;
     dragging=false;
+    detachPointerMove();
     if(selecting){
       selecting=false;
       /* 念のため：選択でスワイプを中止した場合も、現在ページに確実にスナップ */
@@ -1792,6 +1901,7 @@
   window.addEventListener('pointercancel',function(){
     if(!dragging) return;
     dragging=false;
+    detachPointerMove();
     selecting=false;
     /* pointercancel は iOS Safari が横スワイプをネイティブスクロールに昇格させた時にも発火する。
        その時点で tocOvershoot がしきい値を超えていれば、ページ遷移を実行する。 */
@@ -1935,11 +2045,9 @@
       });
     }
   }
-  function openSheet(){ /* 後方互換: 旧呼び出しは note sheet に統合 */
-    openNoteSheet();
-  }
   function openNoteSheet(){
     scrim.classList.add('show'); sheet.classList.add('show');
+    sheet.removeAttribute('inert');
     syncComposerUI();
     renderNoteSheet();
   }
@@ -1961,6 +2069,7 @@
   }
   function closeSheet(){
     scrim.classList.remove('show'); sheet.classList.remove('show');
+    sheet.setAttribute('inert','');
     /* 編集モードや引用状態は閉じる時にクリア */
     _editingNoteId = null;
     _pendingQuote = null;
@@ -2100,10 +2209,14 @@
     return pages[idx] || null;
   }
   async function applyMarkersToCurrentPage(){
+    /* 世代トークン：高速ページ送り中に await をまたいで idx が変わったら破棄する
+       （「ページBのマーカーをページAのDOMに適用」事故を防ぐ） */
+    var myIdx = idx;
     var pageEl = _currentPageEl();
     if(!pageEl) return;
-    /* 既存のmarkerを一旦解除（再適用するため） */
+    /* 既存のmarkerを一旦解除（再適用するため）。保存中(_pending)のものは残す */
     pageEl.querySelectorAll('.marker-hl').forEach(function(s){
+      if(s.dataset.noteId === '_pending') return;
       var t = document.createTextNode(s.textContent);
       s.parentNode.replaceChild(t, s);
     });
@@ -2111,9 +2224,10 @@
 
     if(!WEBON.isReady()) return;
     var user = await WEBON.getUser();
-    if(!user) return;
+    if(!user || idx !== myIdx) return;
     var pk = currentPageKey();
     var mine = await WEBON.listMyNotes(pk);
+    if(idx !== myIdx) return;
     if(!mine || mine.length === 0) return;
 
     /* quoteがあるものだけマーカー対象。短い順に処理（重なり対策） */
@@ -2189,7 +2303,12 @@
     var id = btn.dataset.id;
     if(WEBON.isReady()){
       try {
-        await window._sbDel(id);
+        /* supabase-jsはRLS拒否等でもrejectせず {error} を返すので明示チェック */
+        var rDel = await window._sbDel(id);
+        if(rDel && rDel.error){
+          toast('削除に失敗しました：' + (rDel.error.message || ''));
+          return;
+        }
         var hl = document.querySelector('.marker-hl[data-note-id="'+id+'"]');
         if(hl){
           var t = document.createTextNode(hl.textContent);
@@ -2205,7 +2324,8 @@
   /* 投稿または保存（編集中なら update、新規なら insert） */
   el('noteSend').addEventListener('click', async function(){
     var content = (el('noteInput').value||'').trim();
-    if(!content) return;
+    /* 新規は空メモ不可。編集中は空保存を許可（メモを消して「マーカーのみ」に戻せる） */
+    if(!content && !_editingNoteId){ toast('メモを入力してください'); return; }
     var isPub = el('notePublic').checked;
     el('noteSend').disabled = true;
     var r;
@@ -2219,11 +2339,11 @@
       toast('保存できませんでした：' + (r.error.message || ''));
       return;
     }
-    /* 編集モードならマーカーのスタイルを has-note に更新 */
+    /* 編集モードならマーカーのスタイルを has-note に更新（空にしたら外す） */
     if(_editingNoteId){
       var marker = document.querySelector('.marker-hl[data-note-id="'+_editingNoteId+'"]');
-      if(marker) marker.classList.add('has-note');
-      toast('メモを保存しました');
+      if(marker) marker.classList.toggle('has-note', !!content);
+      toast(content ? 'メモを保存しました' : 'メモを削除し、マーカーのみにしました');
     } else {
       toast(isPub ? '公開メモを投稿しました' : 'メモを保存しました');
     }
@@ -2251,21 +2371,18 @@
   });
 
   /* ===== strip delegated click handler =====
-     marker / hl / o2obtn / pwbtn / notify はすべて strip 内の動的要素なので
+     hl / data-action(o2o, purchase) / notify はすべて strip 内の動的要素なので
      親に1つだけリスナを付けて委譲する。rebuild() で strip を作り直しても
      ハンドラはそのまま残るので付け直し不要。
   */
   strip.addEventListener('click',function(e){
-    var marker = e.target.closest('.marker');
-    if(marker){ e.stopPropagation(); openSheet(marker.dataset.cmt); return; }
     /* 縦書きTOCプレビュー内のチャプタータイトル（リンク）クリックでその章へジャンプ */
     var jump = e.target.closest('[data-jump]');
     if(jump){
       e.stopPropagation();
       var dest = jump.dataset.jump;
       if(document.body.classList.contains('cover')) openBook();
-      var r = chapterRanges[dest];
-      if(r) go(r.start);
+      jumpToChapter(dest);
       return;
     }
     var hl = e.target.closest('.hl');
@@ -2274,17 +2391,13 @@
       toast(hl.dataset.heat+'人が、この一文に線を引きました');
       return;
     }
-    if(e.target.id==='o2obtn'){
-      toast('（プロトタイプ）イベント参加ページへ遷移します'); return;
-    }
-    if(e.target.id==='pwbtn'){
-      startCheckout(); return;
-    }
-    if(e.target.id==='pwloginbtn'){
-      el('accountBtn').click(); return;
+    var act = e.target.closest('[data-action]');
+    if(act){
+      if(act.dataset.action==='o2o'){ toast('（プロトタイプ）イベント参加ページへ遷移します'); return; }
+      if(act.dataset.action==='purchase'){ startCheckout(); return; }
     }
     var sw = e.target.closest('.switch');
-    if(sw && sw.id==='notify'){
+    if(sw && sw.dataset.switch==='notify'){
       sw.classList.toggle('on');
       toast(sw.classList.contains('on')?'通知をオンにしました。次の章でお会いしましょう':'通知をオフにしました');
       return;
@@ -2322,12 +2435,21 @@
     render();
   }
 
-  /* デモ用トグル：購入状態を localStorage で切替 */
+  /* デモ用トグル：購入状態を localStorage で切替（開発環境でのみ表示） */
   var demoBtn = el('demoToggle');
+  if(demoBtn && !IS_DEV){
+    demoBtn.remove();
+    demoBtn = null;
+  }
   if(demoBtn) demoBtn.addEventListener('click',function(){
     setPurchased(!isPurchased());
-    rebuild();
-    toast(isPurchased()?'デモ：購入済み状態に切替えました':'デモ：未購入状態に切替えました');
+    if(isPurchased()){
+      /* デモ購入時も本文取得を試みる（--devビルドの .full.json があれば読める） */
+      loadFullChapters().then(function(){ rebuild(); });
+    } else {
+      rebuild();
+    }
+    toast(isPurchased()?'デモ：購入済み状態に切り替えました':'デモ：未購入状態に切り替えました');
   });
 
   /* ===== 縦書き／横書きの切り替え（縦がデフォルト） ===== */
@@ -2363,10 +2485,40 @@
     var next = getWritingMode() === 'vert' ? 'horz' : 'vert';
     try{ localStorage.setItem(WRITING_KEY, next); }catch(e){}
     applyWritingMode();
+    initBookmark(); /* 縦横でページ構成が変わるので「つづきから」の表示も更新 */
   });
 
   updateTOCLocks();
   render();
+
+  /* しおりの復元は、縦書きrebuild後のページ構成が確定してから */
+  initBookmark();
+
+  /* ===== 実測ページネーションの再計算トリガー =====
+     ① Webフォント確定後（フォールバックフォントで計測した行送りズレを直す）
+     ② リサイズ・端末回転後（viewport寸法が変わるとページ容量が変わる） */
+  function rebuildPreservingPosition(){
+    var ch = chapterOf(idx);
+    var rel = chapterRanges[ch.id] ? idx - chapterRanges[ch.id].start : 0;
+    rebuild();
+    var r2 = chapterRanges[ch.id];
+    if(r2) idx = Math.min(r2.start + rel, r2.start + r2.len - 1);
+    strip.classList.remove('anim');
+    render();
+  }
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ rebuildPreservingPosition(); });
+  }
+  var _resizeT = null;
+  function onViewportChanged(){
+    clearTimeout(_resizeT);
+    _resizeT = setTimeout(function(){
+      rebuildPreservingPosition();
+      initBookmark();
+    }, 250);
+  }
+  window.addEventListener('resize', onViewportChanged);
+  window.addEventListener('orientationchange', onViewportChanged);
 
   /* ===== Stripe Checkout 起動 ===== */
   async function startCheckout(){
@@ -2408,8 +2560,16 @@
     var p = new URLSearchParams(window.location.search);
     if(p.get('purchase') === 'success'){
       toast('ご購入ありがとうございます。すべての章が読めるようになりました');
-      // webhook側でpurchases行が作られるはず。少し待ってから状態確認。
-      setTimeout(refreshPurchasedState, 1500);
+      // webhookでpurchases行が作られるまでラグがあるため、間隔を広げながら数回ポーリング
+      var tries = 0;
+      (function pollPurchase(){
+        setTimeout(function(){
+          refreshPurchasedState().then(function(){
+            tries++;
+            if(_purchasedCache !== true && tries < 5) pollPurchase();
+          });
+        }, 1500 * (tries + 1));
+      })();
       // URLからクエリを除去
       history.replaceState(null, '', window.location.pathname);
     } else if(p.get('purchase') === 'cancel'){
@@ -2434,8 +2594,19 @@
 
     if(!modal || !btnAccount) return;
 
-    function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
-    function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); stStatus.textContent=''; stStatus.className='auth-status'; }
+    function openModal(){
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+      modal.removeAttribute('inert');
+    }
+    function closeModal(){
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+      modal.setAttribute('inert','');
+      stStatus.textContent=''; stStatus.className='auth-status';
+    }
+    /* キーボードハンドラ（Escape）からも閉じられるよう公開 */
+    window._authModalClose = closeModal;
     function showLoggedIn(user){
       paneOut.style.display='none';
       paneIn.style.display='';
@@ -2447,7 +2618,7 @@
         WEBON.getProfile().then(function(p){
           var input = el('authPenName');
           if(input) input.value = (p && p.pen_name) || '';
-        });
+        }).catch(function(e){ console.warn('[WEBON] profile fetch failed', e); });
       }
     }
     function showLoggedOut(){
@@ -2478,7 +2649,7 @@
         stStatus.textContent = 'エラー：' + (r.error.message || r.error);
         stStatus.className = 'auth-status err';
       } else {
-        stStatus.innerHTML = email + ' にログイン用リンクを送信しました。<br>メールを確認して、リンクをクリックしてください。';
+        stStatus.innerHTML = esc(email) + ' にログイン用リンクを送信しました。<br>メールを確認して、リンクをクリックしてください。';
         stStatus.className = 'auth-status ok';
       }
     });
@@ -2518,7 +2689,16 @@
       });
       WEBON.onAuthStateChange(function(user, event){
         if(user){ showLoggedIn(user); refreshPurchasedState(); }
-        else { showLoggedOut(); _purchasedCache=null; }
+        else {
+          showLoggedOut();
+          _purchasedCache = null;
+          if(event === 'SIGNED_OUT'){
+            /* 共有端末対策：ログアウトしたら購入状態のUIキャッシュも消して再描画 */
+            setPurchased(false);
+            _purchasedCache = false;
+            if(typeof rebuild === 'function') rebuild();
+          }
+        }
         if(event === 'SIGNED_IN'){
           // マジックリンクからの戻りなら、モーダルが閉じてもいいよう状態だけ整える
           if(modal.classList.contains('show')){

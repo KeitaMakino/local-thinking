@@ -76,7 +76,17 @@ exports.handler = async (event) => {
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    const origin = event.headers.origin || `https://${event.headers.host}`;
+    // DBの表示価格とStripeの実請求額がズレたまま売らないための整合チェック
+    if (book.price_jpy) {
+      const price = await stripe.prices.retrieve(book.stripe_price_id);
+      if (price.unit_amount !== book.price_jpy || price.currency !== "jpy") {
+        console.error("price mismatch", { db: book.price_jpy, stripe: price.unit_amount, currency: price.currency });
+        return { statusCode: 500, body: JSON.stringify({ error: "price mismatch between DB and Stripe" }) };
+      }
+    }
+
+    // 戻りURLはNetlifyが設定する自サイトURLを優先（Originヘッダは偽装可能なため）
+    const origin = process.env.URL || event.headers.origin || `https://${event.headers.host}`;
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],

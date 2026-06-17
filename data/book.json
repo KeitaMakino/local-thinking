@@ -1,10 +1,10 @@
 [
   { "id": "prologue", "no": "序", "kicker": "OPENING", "title": "はじまり", "subtitle": "降りた先に、ローカルシンキング", "status": "ready" },
-  { "id": "ch1", "no": "1", "kicker": "CHAPTER ONE", "title": "ローカルでみた可能性", "subtitle": "", "status": "skeleton" },
-  { "id": "ch2", "no": "2", "kicker": "CHAPTER TWO", "title": "資本至上主義の限界", "subtitle": "", "status": "skeleton" },
-  { "id": "ch3", "no": "3", "kicker": "CHAPTER THREE", "title": "ローカルシンキングとは何か？", "subtitle": "小さく、身丈で、感察する", "status": "skeleton" },
-  { "id": "ch4", "no": "4", "kicker": "CHAPTER FOUR", "title": "ローカルシンキングが人を救う", "subtitle": "", "status": "skeleton" },
-  { "id": "ch5", "no": "5", "kicker": "CHAPTER FIVE", "title": "ローカルシンキングの実践", "subtitle": "", "status": "skeleton" },
-  { "id": "ch6", "no": "6", "kicker": "CHAPTER SIX", "title": "ローカルシンキングな人たち", "subtitle": "", "status": "skeleton" },
-  { "id": "epilogue", "no": "結", "kicker": "EPILOGUE", "title": "エピローグ", "subtitle": "南房総で、待っています", "status": "skeleton" }
+  { "id": "ch1", "no": "1", "kicker": "CHAPTER ONE", "title": "ローカルでみつけた可能性", "subtitle": "", "status": "ready" },
+  { "id": "ch2", "no": "2", "kicker": "CHAPTER TWO", "title": "資本至上主義の限界", "subtitle": "", "status": "ready" },
+  { "id": "ch3", "no": "3", "kicker": "CHAPTER THREE", "title": "ローカルシンキングとは何か？", "subtitle": "小さく、身丈で、感察する", "status": "ready" },
+  { "id": "ch4", "no": "4", "kicker": "CHAPTER FOUR", "title": "ローカルシンキングが人を救う", "subtitle": "個人効能編", "status": "ready" },
+  { "id": "ch5", "no": "5", "kicker": "CHAPTER FIVE", "title": "ローカルシンキングが社会を救う", "subtitle": "実践のはじめかた", "status": "ready" },
+  { "id": "ch6", "no": "6", "kicker": "CHAPTER SIX", "title": "ローカルシンキングな人たち", "subtitle": "実践者対談", "status": "ready" },
+  { "id": "epilogue", "no": "結", "kicker": "EPILOGUE", "title": "エピローグ", "subtitle": "南房総で、待っています", "status": "ready" }
 ]

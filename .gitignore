@@ -13,3 +13,6 @@ node_modules/
 
 # Netlify
 .netlify/
+
+# ローカル開発用の有料章フル本文（build.py --dev が生成。本番には置かない）
+data/chapters/*.full.json

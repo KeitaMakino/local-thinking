@@ -64,6 +64,8 @@
     signOut: async function(){
       if(!ready) return;
       await sb.auth.signOut();
+      /* onAuthStateChange登録前にsignOutされても古いユーザーを返さないよう明示クリア */
+      this._cachedUser = null;
     },
     _cachedUser: null,
     getUser: async function(){

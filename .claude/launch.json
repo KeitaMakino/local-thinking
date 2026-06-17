@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4173"],
       "port": 4173
+    },
+    {
+      "name": "netlify (functions込み・決済/有料章の動作確認用)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["netlify", "dev", "--port", "8888"],
+      "port": 8888
     }
   ]
 }
